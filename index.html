@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pitch Performance – 8/1/2026 – 8/9/2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Roboto+Slab:wght@600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Montserrat, -apple-system, 'Segoe UI', sans-serif; background: #f4f6f8; color: #003963; margin: 0; padding: 28px 22px; }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  h1 { font-family: 'Roboto Slab', Georgia, serif; font-weight: 800; color: #003963; font-size: 33px; letter-spacing: 0.02em; margin: 0; text-transform: uppercase; }
+  h2 { font-family: 'Roboto Slab', serif; font-weight: 800; color: #003963; font-size: 24px; letter-spacing: 0.02em; margin: 0; text-transform: uppercase; }
+  select { font-family: inherit; font-size: 14px; padding: 9px 11px; border-radius: 8px; border: 1.5px solid #77B2D0; color: #003963; background: #fff; outline: none; cursor: pointer; min-width: 150px; }
+  .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 18px; }
+  .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+  .note { text-align: center; font-size: 11px; color: #C0B8B6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
+    <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;">Job type</label>
+    <select id="jobTypeSel"></select>
+    <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;margin-left:8px;">Branch</label>
+    <select id="branchSel"></select>
+  </div>
+  <div id="root"></div>
+</div>
+<script>
+const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":16,"estimates":96,"pitched":6,"closed":4,"revenue":84208,"star":[2,1,0,1,0],"partialSold":0,"partialPitched":1,"iaqJobs":6,"insJobs":1,"ductJobs":3,"iaqSold":3,"insSold":1,"ductSold":1,"chanPitched":8,"chanSold":4},{"branch":"Las Vegas","jobs":49,"estimates":200,"pitched":29,"closed":18,"revenue":396038,"star":[3,9,2,2,2],"partialSold":0,"partialPitched":2,"iaqJobs":3,"insJobs":0,"ductJobs":1,"iaqSold":1,"insSold":0,"ductSold":0,"chanPitched":4,"chanSold":1},{"branch":"Phoenix","jobs":65,"estimates":281,"pitched":34,"closed":23,"revenue":499648,"star":[5,12,4,2,0],"partialSold":0,"partialPitched":1,"iaqJobs":7,"insJobs":1,"ductJobs":18,"iaqSold":1,"insSold":1,"ductSold":10,"chanPitched":22,"chanSold":10},{"branch":"Reno 1","jobs":37,"estimates":131,"pitched":22,"closed":6,"revenue":96697.41,"star":[3,0,2,0,0],"partialSold":1,"partialPitched":3,"iaqJobs":1,"insJobs":0,"ductJobs":9,"iaqSold":0,"insSold":0,"ductSold":3,"chanPitched":10,"chanSold":3},{"branch":"Reno 2","jobs":20,"estimates":89,"pitched":6,"closed":3,"revenue":90585,"star":[0,0,1,1,0],"partialSold":1,"partialPitched":1,"iaqJobs":1,"insJobs":0,"ductJobs":2,"iaqSold":1,"insSold":0,"ductSold":1,"chanPitched":3,"chanSold":2},{"branch":"San Antonio","jobs":37,"estimates":195,"pitched":20,"closed":12,"revenue":233415,"star":[7,3,1,0,1],"partialSold":0,"partialPitched":0,"iaqJobs":11,"insJobs":2,"ductJobs":16,"iaqSold":5,"insSold":1,"ductSold":9,"chanPitched":21,"chanSold":11},{"branch":"Tucson","jobs":28,"estimates":77,"pitched":14,"closed":11,"revenue":213744,"star":[4,4,2,1,0],"partialSold":0,"partialPitched":0,"iaqJobs":1,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":1,"chanSold":0}],"M3":[{"branch":"Austin","jobs":6,"estimates":28,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":3,"insJobs":0,"ductJobs":1,"iaqSold":1,"insSold":0,"ductSold":0,"chanPitched":3,"chanSold":1},{"branch":"Las Vegas","jobs":14,"estimates":32,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":3,"insJobs":0,"ductJobs":1,"iaqSold":1,"insSold":0,"ductSold":1,"chanPitched":3,"chanSold":1},{"branch":"Phoenix","jobs":21,"estimates":74,"pitched":3,"closed":3,"revenue":76116,"star":[1,0,1,1,0],"partialSold":0,"partialPitched":0,"iaqJobs":4,"insJobs":3,"ductJobs":2,"iaqSold":0,"insSold":1,"ductSold":1,"chanPitched":8,"chanSold":1},{"branch":"Reno 1","jobs":9,"estimates":32,"pitched":3,"closed":1,"revenue":10091.77,"star":[0,0,0,0,0],"partialSold":1,"partialPitched":2,"iaqJobs":2,"insJobs":0,"ductJobs":3,"iaqSold":0,"insSold":0,"ductSold":1,"chanPitched":3,"chanSold":1},{"branch":"Reno 2","jobs":9,"estimates":38,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":3,"insJobs":0,"ductJobs":3,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":5,"chanSold":0},{"branch":"San Antonio","jobs":10,"estimates":54,"pitched":2,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":7,"insJobs":0,"ductJobs":2,"iaqSold":1,"insSold":0,"ductSold":1,"chanPitched":7,"chanSold":2},{"branch":"Tucson","jobs":3,"estimates":6,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":1,"iaqJobs":0,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":0,"chanSold":0}],"RETAIL":[{"branch":"Austin","jobs":12,"estimates":44,"pitched":9,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":4,"insJobs":2,"ductJobs":3,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":7,"chanSold":0},{"branch":"Las Vegas","jobs":34,"estimates":73,"pitched":23,"closed":3,"revenue":69619,"star":[1,1,0,1,0],"partialSold":0,"partialPitched":2,"iaqJobs":4,"insJobs":1,"ductJobs":4,"iaqSold":1,"insSold":1,"ductSold":2,"chanPitched":7,"chanSold":3},{"branch":"Phoenix","jobs":36,"estimates":111,"pitched":32,"closed":13,"revenue":292523,"star":[7,3,2,1,0],"partialSold":0,"partialPitched":0,"iaqJobs":1,"insJobs":0,"ductJobs":14,"iaqSold":0,"insSold":0,"ductSold":6,"chanPitched":14,"chanSold":6},{"branch":"Reno 1","jobs":5,"estimates":9,"pitched":4,"closed":2,"revenue":16873.31,"star":[2,0,0,0,0],"partialSold":0,"partialPitched":1,"iaqJobs":0,"insJobs":0,"ductJobs":2,"iaqSold":0,"insSold":0,"ductSold":1,"chanPitched":2,"chanSold":1},{"branch":"Reno 2","jobs":7,"estimates":33,"pitched":6,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":0,"ductJobs":5,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":5,"chanSold":0},{"branch":"San Antonio","jobs":22,"estimates":94,"pitched":16,"closed":2,"revenue":35223,"star":[2,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":5,"insJobs":2,"ductJobs":12,"iaqSold":0,"insSold":0,"ductSold":3,"chanPitched":15,"chanSold":3},{"branch":"Tucson","jobs":16,"estimates":27,"pitched":13,"closed":3,"revenue":51736,"star":[3,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":1,"insJobs":1,"ductJobs":2,"iaqSold":1,"insSold":0,"ductSold":0,"chanPitched":4,"chanSold":1}],"PHONE":[{"branch":"Austin","jobs":1,"estimates":0,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":0,"chanSold":0},{"branch":"Phoenix","jobs":10,"estimates":27,"pitched":5,"closed":1,"revenue":24237,"star":[0,0,1,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":1,"ductJobs":2,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":3,"chanSold":0},{"branch":"San Antonio","jobs":8,"estimates":8,"pitched":2,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":0,"chanSold":0},{"branch":"Tucson","jobs":3,"estimates":6,"pitched":2,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":1,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":1,"chanSold":0}],"D2":[{"branch":"Austin","jobs":33,"estimates":163,"pitched":8,"closed":4,"revenue":63626,"star":[3,1,0,0,0],"partialSold":0,"partialPitched":1,"iaqJobs":7,"insJobs":1,"ductJobs":6,"iaqSold":1,"insSold":0,"ductSold":2,"chanPitched":10,"chanSold":3},{"branch":"Las Vegas","jobs":85,"estimates":236,"pitched":20,"closed":13,"revenue":268421,"star":[3,4,0,2,1],"partialSold":3,"partialPitched":4,"iaqJobs":4,"insJobs":2,"ductJobs":8,"iaqSold":0,"insSold":0,"ductSold":2,"chanPitched":13,"chanSold":2},{"branch":"Phoenix","jobs":54,"estimates":149,"pitched":9,"closed":3,"revenue":46490,"star":[0,1,0,1,0],"partialSold":0,"partialPitched":0,"iaqJobs":6,"insJobs":1,"ductJobs":8,"iaqSold":3,"insSold":1,"ductSold":5,"chanPitched":14,"chanSold":8},{"branch":"Reno 1","jobs":17,"estimates":50,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":0,"chanSold":0},{"branch":"Reno 2","jobs":12,"estimates":27,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":2,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":2,"chanSold":0},{"branch":"San Antonio","jobs":84,"estimates":351,"pitched":24,"closed":16,"revenue":346058,"star":[7,3,4,2,0],"partialSold":0,"partialPitched":0,"iaqJobs":27,"insJobs":3,"ductJobs":18,"iaqSold":4,"insSold":1,"ductSold":12,"chanPitched":39,"chanSold":14},{"branch":"Tucson","jobs":36,"estimates":60,"pitched":3,"closed":2,"revenue":24004,"star":[1,0,0,0,0],"partialSold":1,"partialPitched":1,"iaqJobs":3,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":3,"chanSold":0}],"D1":[{"branch":"Austin","jobs":6,"estimates":12,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":0,"chanSold":0},{"branch":"Las Vegas","jobs":39,"estimates":78,"pitched":4,"closed":3,"revenue":39445,"star":[2,1,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":7,"insJobs":1,"ductJobs":2,"iaqSold":2,"insSold":1,"ductSold":1,"chanPitched":8,"chanSold":3},{"branch":"Phoenix","jobs":18,"estimates":43,"pitched":4,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":2,"ductJobs":3,"iaqSold":0,"insSold":1,"ductSold":0,"chanPitched":4,"chanSold":1},{"branch":"Reno 1","jobs":3,"estimates":10,"pitched":1,"closed":1,"revenue":6334.12,"star":[0,0,0,0,0],"partialSold":1,"partialPitched":1,"iaqJobs":1,"insJobs":0,"ductJobs":0,"iaqSold":1,"insSold":0,"ductSold":0,"chanPitched":1,"chanSold":1},{"branch":"San Antonio","jobs":45,"estimates":137,"pitched":3,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":2,"iaqJobs":14,"insJobs":2,"ductJobs":4,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":17,"chanSold":0},{"branch":"Tucson","jobs":12,"estimates":22,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":1,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":1,"chanSold":0}],"M2":[{"branch":"Austin","jobs":1,"estimates":3,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":1,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":1,"chanSold":0},{"branch":"Las Vegas","jobs":38,"estimates":94,"pitched":4,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":5,"insJobs":3,"ductJobs":8,"iaqSold":1,"insSold":0,"ductSold":2,"chanPitched":12,"chanSold":2},{"branch":"Phoenix","jobs":22,"estimates":49,"pitched":1,"closed":1,"revenue":4011,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":13,"insJobs":0,"ductJobs":1,"iaqSold":8,"insSold":0,"ductSold":1,"chanPitched":14,"chanSold":9},{"branch":"Reno 1","jobs":10,"estimates":35,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":0,"insJobs":1,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":1,"chanSold":0},{"branch":"San Antonio","jobs":24,"estimates":99,"pitched":3,"closed":1,"revenue":16772,"star":[1,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":13,"insJobs":0,"ductJobs":4,"iaqSold":1,"insSold":0,"ductSold":2,"chanPitched":15,"chanSold":3},{"branch":"Tucson","jobs":5,"estimates":14,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":2,"insJobs":1,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":3,"chanSold":0}],"M1":[{"branch":"Las Vegas","jobs":72,"estimates":119,"pitched":4,"closed":1,"revenue":14471,"star":[1,0,0,0,0],"partialSold":0,"partialPitched":1,"iaqJobs":12,"insJobs":6,"ductJobs":11,"iaqSold":4,"insSold":2,"ductSold":1,"chanPitched":25,"chanSold":6},{"branch":"Phoenix","jobs":12,"estimates":30,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":3,"insJobs":1,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":4,"chanSold":0},{"branch":"Reno 1","jobs":16,"estimates":36,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":4,"insJobs":3,"ductJobs":3,"iaqSold":1,"insSold":1,"ductSold":0,"chanPitched":6,"chanSold":2},{"branch":"Reno 2","jobs":3,"estimates":7,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":1,"insJobs":0,"ductJobs":1,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":2,"chanSold":0},{"branch":"San Antonio","jobs":52,"estimates":201,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":46,"insJobs":2,"ductJobs":6,"iaqSold":3,"insSold":0,"ductSold":0,"chanPitched":49,"chanSold":3},{"branch":"Tucson","jobs":15,"estimates":46,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":8,"insJobs":0,"ductJobs":0,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":8,"chanSold":0}],"DCS":[{"branch":"Austin","jobs":4,"estimates":30,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":4,"insJobs":0,"ductJobs":4,"iaqSold":0,"insSold":0,"ductSold":0,"chanPitched":4,"chanSold":0},{"branch":"Las Vegas","jobs":11,"estimates":28,"pitched":0,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":9,"insJobs":4,"ductJobs":3,"iaqSold":3,"insSold":2,"ductSold":0,"chanPitched":10,"chanSold":5},{"branch":"Phoenix","jobs":19,"estimates":38,"pitched":3,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":6,"insJobs":5,"ductJobs":11,"iaqSold":5,"insSold":1,"ductSold":7,"chanPitched":16,"chanSold":9},{"branch":"San Antonio","jobs":11,"estimates":35,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":6,"insJobs":0,"ductJobs":8,"iaqSold":0,"insSold":0,"ductSold":2,"chanPitched":10,"chanSold":2},{"branch":"Tucson","jobs":14,"estimates":21,"pitched":1,"closed":0,"revenue":0,"star":[0,0,0,0,0],"partialSold":0,"partialPitched":0,"iaqJobs":4,"insJobs":2,"ductJobs":5,"iaqSold":1,"insSold":0,"ductSold":0,"chanPitched":10,"chanSold":1}]},"jobNumsByCell":{},"loadedRange":{"start":"2026-08-01","end":"2026-08-09"},"initialJobType":"D3","initialBranch":"ALL","JOB_TYPES":["D3","M3","RETAIL","PHONE","D2","D1","M2","M1","DCS"],"BRANCH_ORDER":["San Antonio","Phoenix","Austin","Tucson","Las Vegas","Reno 2","Reno 1"],"TARGETS":{"D3":{"pr":50,"rcr":80,"rgcr":40},"M3":{"pr":25,"rcr":75,"rgcr":19},"RETAIL":{"pr":100,"rcr":30,"rgcr":30},"PHONE":{"pr":50,"rcr":20,"rgcr":10}},"C":{"darkBlue":"#003963","navy":"#000426","medBlue":"#3678A0","lightBlue":"#77B2D0","red":"#CD1E1F","gray":"#C0B8B6","white":"#FFFFFF"},"AVG_TICKET_BY_BRANCH":{"Phoenix":16873,"Tucson":14990,"Las Vegas":16896,"Reno 1":15200,"Reno 2":13456,"San Antonio":18300,"Austin":14964},"AVG_TICKET_CONSOLIDATED":16875,"AVG_TICKET_SOURCE":"Jul 2026 RvR Dashboard (prior-month MTD)","CHANNEL_AVG_TICKET":3000,"STAR_COLORS":["#C0B8B6","#77B2D0","#3678A0","#003963","#CD1E1F"],"STAR_LABELS":["1★","2★","3★","4★","5★"],"PARTIAL_COLOR":"#8a8a8a","CHAN_COLORS":{"IAQ":"#003963","INS":"#C0B8B6","DUCT":"#CD1E1F"},"ST_TENANT_SLUG":{"Phoenix":"goettl_phoenix","Las Vegas":"goettl_lasvegas","Tucson":"goettl_tucson","San Antonio":"goettl_sanantonio","Austin":"goettl_austin","Reno 1":"goettl_reno1","Reno 2":"goettl_reno2"}};
+</script>
+<script>
+
+(function () {
+  var C = D.C, TARGETS = D.TARGETS, JOB_TYPES = D.JOB_TYPES, BRANCH_ORDER = D.BRANCH_ORDER;
+  var pct = function (n, d) { return d > 0 ? Math.round((n / d) * 100) : 0; };
+  function channelTarget(jt) { var pr = 50, cr = jt === "D3" ? 20 : 30; return { pr: pr, cr: cr, rgcr: Math.round(pr * cr) / 100 }; }
+  var fd = function (d) { if (!d) return ""; var p = d.split("-"); return parseInt(p[1]) + "/" + parseInt(p[2]) + "/" + p[0]; };
+  var fd2 = function (d) { if (!d) return ""; var p = d.split("-"); return p[1] + "/" + p[2] + "/" + p[0].slice(2); };
+  var rangeLabel = D.loadedRange ? fd(D.loadedRange.start) + " – " + fd(D.loadedRange.end) : "No data";
+  var summaryRange = D.loadedRange ? fd2(D.loadedRange.start) + "-" + fd2(D.loadedRange.end) : "No data";
+
+  function esc(s){ return String(s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];}); }
+
+  function mixBar(segments, showLegend) {
+    var total = segments.reduce(function (a, s) { return a + s.value; }, 0);
+    if (total === 0) return '<div style="font-size:11px;color:' + C.gray + ';padding:2px 0;">No data</div>';
+    var active = segments.filter(function (s) { return s.value > 0; });
+    var bars = active.map(function (s) {
+      var seg = s.value / total * 100;
+      return '<div title="' + esc(s.label) + ': ' + s.value + ' (' + Math.round(seg) + '%)" style="width:' + seg + '%;background:' + s.color + ';color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;line-height:1;min-width:14px;">' + s.value + '</div>';
+    }).join("");
+    var legend = "";
+    if (showLegend) {
+      legend = '<div style="display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;justify-content:center;">' +
+        segments.map(function (s) {
+          return '<span style="font-size:11px;color:' + C.navy + ';display:inline-flex;align-items:center;gap:4px;font-weight:600;"><span style="width:10px;height:10px;background:' + s.color + ';border-radius:2px;display:inline-block;"></span>' + esc(s.label) + '</span>';
+        }).join("") + '</div>';
+    }
+    return '<div><div style="display:flex;height:20px;border-radius:4px;overflow:hidden;background:#eef2f5;">' + bars + '</div>' + legend + '</div>';
+  }
+
+  function kpiCard(o) {
+    var green = "#1a7a3c";
+    var topColor = o.good === true ? green : o.alert ? C.red : C.darkBlue;
+    var valueColor = topColor;
+    return '<div style="background:#fff;border-radius:10px;padding:13px 12px;text-align:center;box-shadow:0 2px 10px rgba(0,0,0,0.06);border:1px solid #e3e9ee;border-top:3px solid ' + topColor + ';">' +
+      '<div style="font-family:\'Roboto Slab\',serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:' + C.darkBlue + ';">' + esc(o.title) + '</div>' +
+      '<div style="font-family:\'Roboto Slab\',serif;font-weight:800;font-size:34px;line-height:1.05;margin:4px 0 3px;color:' + valueColor + ';">' + esc(o.big) + '</div>' +
+      '<div style="font-size:11.5px;font-weight:600;color:' + C.medBlue + ';">' + esc(o.sub) + '</div>' +
+      (o.extra ? '<div style="font-family:\'Roboto Slab\',serif;font-weight:800;font-size:20px;margin-top:3px;color:' + C.navy + ';">' + esc(o.extra) + '</div>' : '') +
+      '</div>';
+  }
+
+  var td = "padding:11px 8px;text-align:center;color:" + C.navy + ";";
+  var tdBold = td + "font-weight:800;color:" + C.darkBlue + ";";
+  function thBase(align) { return 'padding:10px 8px;font-weight:700;font-size:11.5px;line-height:1.2;text-align:' + (align || "center") + ';vertical-align:middle;'; }
+
+  function stJobUrl(branch, n) {
+    var slug = (D.ST_TENANT_SLUG || {})[branch];
+    return slug ? "https://" + slug + ".eh.go.servicetitan.com/#/Job/Index/" + n
+                : "https://go.servicetitan.com/#/Job/Index/" + n;
+  }
+
+  // Clickable # Jobs cell when the cell has cached job numbers; plain otherwise.
+  // section is "repl" or "chan" — drives which estimate flag the popup highlights.
+  function jobCell(branch, jobType, jobs, section) {
+    var key = branch + "||" + jobType;
+    var has = (D.jobNumsByCell[key] || []).length > 0 && jobs > 0;
+    if (!has) return '<td style="' + td + '">' + jobs + '</td>';
+    return '<td style="' + td + 'color:' + C.medBlue + ';font-weight:700;text-decoration:underline;cursor:pointer;" ' +
+      'onclick="__openPopup(\'' + branch.replace(/'/g, "\\'") + '\',\'' + jobType + '\',\'' + (section || "repl") + '\')">' + jobs + '</td>';
+  }
+
+  // Popup overlay (built once, shown on demand).
+  window.__openPopup = function (branch, jobType, section) {
+    section = section === "chan" ? "chan" : "repl";
+    var flagKey = section === "chan" ? "hasChan" : "hasRepl";
+    var estLabel = section === "chan" ? "channel" : "replacement";
+    var rows = D.jobNumsByCell[branch + "||" + jobType] || [];
+
+    var body;
+    if (rows.length === 0) {
+      body = '<div style="padding:20px;text-align:center;color:' + C.gray + ';font-size:13px;">No job numbers for this cell.</div>';
+    } else {
+      body = rows.map(function (r) {
+        var hasEst = r[flagKey];
+        var id = r.id || r.n; // link by ServiceTitan job id; display the job number
+        return '<a href="' + stJobUrl(branch, id) + '" target="_blank" rel="noopener noreferrer" ' +
+          'style="display:flex;align-items:center;justify-content:space-between;padding:10px 18px;text-decoration:none;font-size:14px;font-weight:700;border-bottom:1px solid #eef2f5;color:' + (hasEst ? C.medBlue : C.red) + ';" ' +
+          'onmouseenter="this.style.background=\'#f3f7fa\'" onmouseleave="this.style.background=\'transparent\'">' +
+          '<span style="text-decoration:underline;">' + r.n + '</span><span style="color:' + C.gray + ';font-size:14px;">↗</span></a>';
+      }).join("");
+    }
+
+    var overlay = document.createElement("div");
+    overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,4,38,0.45);display:flex;align-items:center;justify-content:center;z-index:50;";
+    overlay.onclick = function () { document.body.removeChild(overlay); };
+    var modal = document.createElement("div");
+    modal.style.cssText = "background:#fff;border-radius:12px;width:min(440px,92vw);max-height:78vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,0.3);overflow:hidden;";
+    modal.onclick = function (e) { e.stopPropagation(); };
+    modal.innerHTML =
+      '<div style="background:' + C.darkBlue + ';color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;">' +
+      '<div><div style="font-family:\'Roboto Slab\',serif;font-weight:700;font-size:15px;">' + esc(branch) + ' · ' + esc(jobType) + ' · Jobs</div>' +
+      '<div style="font-size:12px;opacity:0.85;margin-top:2px;">' + rows.length + ' ServiceTitan jobs · <span style="color:#ff9b9b;">red = no ' + estLabel + ' estimate</span></div></div>' +
+      '<button style="background:transparent;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1;padding:4px;" onclick="this.closest(\'[data-ov]\').remove()">×</button></div>' +
+      '<div style="overflow-y:auto;padding:8px 0;">' + body + '</div>';
+    overlay.setAttribute("data-ov", "1");
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+  };
+
+  function render(jobType, branch) {
+    branch = branch || "ALL";
+    var tgt = TARGETS[jobType] || null;
+    var raw = D.rowsByType[jobType] || [];
+    var byBranch = {};
+    BRANCH_ORDER.forEach(function (b) { byBranch[b] = null; });
+    raw.forEach(function (r) { byBranch[r.branch] = r; });
+
+    var rgcrTargetPct = tgt ? tgt.rgcr : null;
+    var branchRows = BRANCH_ORDER
+      .filter(function (b) { return branch === "ALL" || b === branch; })
+      .map(function (b) { return byBranch[b]; }).filter(Boolean).map(function (r) {
+      var pr = pct(r.pitched, r.jobs), cr = pct(r.closed, r.pitched), rgcr = Math.ceil(pr * cr / 100);
+      // Missed Sold (Option B): at/above target → 0; below → ceiling of raw miss.
+      // RGCR is ceiled to the whole percent first, so a branch that rounds up to
+      // target (e.g. 39.5 → 40) counts as on-target and shows 0 missed.
+      // Dollars priced off the whole count so count and $ stay consistent.
+      var belowTarget = rgcrTargetPct != null && rgcr < rgcrTargetPct;
+      var missedSales = belowTarget ? Math.ceil(r.jobs * (rgcrTargetPct - rgcr) / 100) : 0;
+      var branchAvg = D.AVG_TICKET_BY_BRANCH[r.branch] != null ? D.AVG_TICKET_BY_BRANCH[r.branch] : D.AVG_TICKET_CONSOLIDATED;
+      var o = {}; for (var k in r) o[k] = r[k];
+      o.pitchRate = pr; o.closeRate = cr; o.rgcr = rgcr; o.missedSales = missedSales; o.missedDollars = missedSales * branchAvg;
+      return o;
+    });
+
+    var sum = branchRows.reduce(function (a, r) {
+      return {
+        jobs: a.jobs + r.jobs, estimates: a.estimates + r.estimates, pitched: a.pitched + r.pitched, closed: a.closed + r.closed,
+        revenue: a.revenue + r.revenue, missedSales: a.missedSales + r.missedSales, missedDollars: a.missedDollars + r.missedDollars,
+        star: a.star.map(function (v, i) { return v + ((r.star && r.star[i]) || 0); }),
+        partialSold: a.partialSold + (r.partialSold || 0), partialPitched: a.partialPitched + (r.partialPitched || 0),
+        iaqJobs: a.iaqJobs + (r.iaqJobs || 0), insJobs: a.insJobs + (r.insJobs || 0), ductJobs: a.ductJobs + (r.ductJobs || 0),
+        iaqSold: a.iaqSold + (r.iaqSold || 0), insSold: a.insSold + (r.insSold || 0), ductSold: a.ductSold + (r.ductSold || 0),
+        chanPitched: a.chanPitched + (r.chanPitched || 0), chanSold: a.chanSold + (r.chanSold || 0)
+      };
+    }, { jobs: 0, estimates: 0, pitched: 0, closed: 0, revenue: 0, missedSales: 0, missedDollars: 0, star: [0,0,0,0,0], partialSold: 0, partialPitched: 0, iaqJobs: 0, insJobs: 0, ductJobs: 0, iaqSold: 0, insSold: 0, ductSold: 0, chanPitched: 0, chanSold: 0 });
+
+    var totalPitch = pct(sum.pitched, sum.jobs), totalClose = pct(sum.closed, sum.pitched), totalRgcr = Math.ceil(totalPitch * totalClose / 100);
+    var chanTotalPitch = pct(sum.chanPitched, sum.jobs), chanTotalClose = pct(sum.chanSold, sum.chanPitched), chanTotalRgcr = Math.ceil(chanTotalPitch * chanTotalClose / 100);
+    var chanTgt = channelTarget(jobType);
+    var chanMissedSales = branchRows.reduce(function (a, r) {
+      var cpr = pct(r.chanPitched, r.jobs);
+      var ccr = pct(r.chanSold, r.chanPitched);
+      var crgcr = Math.ceil(cpr * ccr / 100);
+      return a + (crgcr < chanTgt.rgcr ? Math.ceil(r.jobs * (chanTgt.rgcr - crgcr) / 100) : 0);
+    }, 0);
+    var chanMissedDollars = chanMissedSales * D.CHANNEL_AVG_TICKET;
+    var missed = sum.missedSales, missedDollars = sum.missedDollars;
+    var missedAvgTicket = (branch !== "ALL" && D.AVG_TICKET_BY_BRANCH[branch] != null)
+      ? D.AVG_TICKET_BY_BRANCH[branch] : D.AVG_TICKET_CONSOLIDATED;
+
+    var rateColor = function (rate, target) { return target == null ? C.darkBlue : rate >= target ? C.darkBlue : C.red; };
+    var rgcrCell = function (rgcr) { if (tgt == null) return { bg: "transparent", fg: C.darkBlue }; return rgcr >= tgt.rgcr ? { bg: "#e3f4e8", fg: "#1a7a3c" } : { bg: "#fdeaea", fg: C.red }; };
+
+    if (branchRows.length === 0) {
+      return '<div style="background:#eef3f7;border-radius:8px;padding:24px;font-size:14px;font-weight:600;color:' + C.medBlue + ';text-align:center;">No ' + esc(jobType) + ' jobs in this snapshot.</div>';
+    }
+
+    var html = "";
+
+    // Header
+    html += '<div style="text-align:center;margin-bottom:20px;">' +
+      '<h1>' + esc(jobType) + ' Replacement Performance – by Branch</h1>' +
+      '<div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-top:8px;">' +
+      '<span style="height:2px;width:80px;background:' + C.darkBlue + ';"></span>' +
+      '<span style="font-weight:600;font-size:15px;color:' + C.medBlue + ';">Summary&nbsp; | &nbsp;' + esc(rangeLabel) + '</span>' +
+      '<span style="height:2px;width:80px;background:' + C.darkBlue + ';"></span></div>' +
+      (tgt ? '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.medBlue + ';">Targets — PR ' + tgt.pr + '% · RCR ' + tgt.rcr + '% · RGCR ' + tgt.rgcr + '%</div>'
+           : '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.gray + ';">No targets set for ' + esc(jobType) + '</div>') +
+      '</div>';
+
+    // Replacement table — Missed Sold column shown only when the job type has a target.
+    var missedCol = !!tgt;
+    var replSpan = missedCol ? 9 : 8;      // total data columns (for mix-bar colspan)
+    var replGroup = missedCol ? 6 : 5;     // "Replacement" group header span
+    var missedCellHtml = function (cnt, dollars, boldNav) {
+      var col = cnt > 0 ? C.red : C.darkBlue;
+      return '<td style="' + td + 'font-weight:700;color:' + col + ';">' + cnt +
+        '<span style="display:block;font-size:10.5px;font-weight:' + (boldNav ? 700 : 600) + ';color:' + (boldNav ? C.navy : C.gray) + ';">$' + Math.round(dollars).toLocaleString() + '</span></td>';
+    };
+    var rowsHtml = branchRows.map(function (r, idx) {
+      var bg = idx % 2 ? "#f3f7fa" : "#fff";
+      var rc = rgcrCell(r.rgcr);
+      var main = '<tr style="background:' + bg + ';">' +
+        '<td style="' + td + 'text-align:left;font-weight:600;">' + esc(r.branch) + '</td>' +
+        jobCell(r.branch, jobType, r.jobs, "repl") +
+        '<td style="' + td + '">' + r.estimates + '</td>' +
+        '<td style="' + td + 'border-left:1px solid #e3e9ee;font-weight:700;">' + r.pitched + '</td>' +
+        '<td style="' + td + 'font-weight:700;">' + r.closed + '</td>' +
+        '<td style="' + td + 'font-weight:700;color:' + rateColor(r.pitchRate, tgt && tgt.pr) + ';">' + r.pitchRate + '%</td>' +
+        '<td style="' + td + 'font-weight:700;color:' + rateColor(r.closeRate, tgt && tgt.rcr) + ';">' + r.closeRate + '%</td>' +
+        '<td style="' + td + 'font-weight:800;background:' + rc.bg + ';color:' + rc.fg + ';">' + r.rgcr + '%</td>' +
+        (missedCol ? missedCellHtml(r.missedSales, r.missedDollars, false) : '') + '</tr>';
+      var mix = '<tr style="background:' + bg + ';border-bottom:1px solid #e3e9ee;"><td colspan="' + replSpan + '" style="padding:0 12px 10px 12px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:700;color:' + C.medBlue + ';min-width:70px;text-transform:uppercase;">Star mix</span>' +
+        '<div style="flex:1;">' + mixBar(D.STAR_COLORS.map(function (c, i) { return { label: D.STAR_LABELS[i], value: (r.star && r.star[i]) || 0, color: c }; }).concat([{ label: "Partial", value: r.partialSold || 0, color: D.PARTIAL_COLOR }])) + '</div></div></td></tr>';
+      return main + mix;
+    }).join("");
+
+    var totRc = rgcrCell(totalRgcr);
+    var totalsRow = '<tr style="background:#e8eef3;font-weight:800;color:' + C.darkBlue + ';">' +
+      '<td style="' + td + 'text-align:left;font-weight:800;">TOTALS</td>' +
+      '<td style="' + tdBold + '">' + sum.jobs + '</td>' +
+      '<td style="' + tdBold + '">' + sum.estimates + '</td>' +
+      '<td style="' + tdBold + 'border-left:1px solid #d4dde4;">' + sum.pitched + '</td>' +
+      '<td style="' + tdBold + '">' + sum.closed + '</td>' +
+      '<td style="' + tdBold + 'color:' + rateColor(totalPitch, tgt && tgt.pr) + ';">' + totalPitch + '%</td>' +
+      '<td style="' + tdBold + 'color:' + rateColor(totalClose, tgt && tgt.rcr) + ';">' + totalClose + '%</td>' +
+      '<td style="' + tdBold + 'background:' + totRc.bg + ';color:' + totRc.fg + ';">' + totalRgcr + '%</td>' +
+      (missedCol ? missedCellHtml(missed, missedDollars, true) : '') + '</tr>' +
+      '<tr style="background:#e8eef3;"><td colspan="' + replSpan + '" style="padding:0 12px 10px 12px;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:800;color:' + C.darkBlue + ';min-width:70px;text-transform:uppercase;">Star mix</span><div style="flex:1;">' +
+      mixBar(D.STAR_COLORS.map(function (c, i) { return { label: D.STAR_LABELS[i], value: sum.star[i], color: c }; }).concat([{ label: "Partial", value: sum.partialSold || 0, color: D.PARTIAL_COLOR }]), true) + '</div></div></td></tr>';
+
+    html += '<div class="card"><table><thead>' +
+      '<tr style="background:' + C.darkBlue + ';color:#fff;"><th rowspan="2" style="' + thBase("left") + '">Branch</th>' +
+      '<th colspan="2" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">' + esc(jobType) + '</th>' +
+      '<th colspan="' + replGroup + '" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);border-left:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">Replacement</th></tr>' +
+      '<tr style="background:' + C.darkBlue + ';color:#fff;"><th style="' + thBase() + '"># Jobs</th><th style="' + thBase() + '"># Est</th>' +
+      '<th style="' + thBase() + 'border-left:1px solid rgba(255,255,255,0.25);"># Pitched</th><th style="' + thBase() + '"># Closed</th>' +
+      '<th style="' + thBase() + '">% Pitch Rate</th><th style="' + thBase() + '">% Pitched Close Rate</th><th style="' + thBase() + '">% Gross Close Rate</th>' +
+      (missedCol ? '<th style="' + thBase() + '">Missed Sold</th>' : '') + '</tr>' +
+      '</thead><tbody>' + rowsHtml + totalsRow + '</tbody></table></div>';
+
+    // Replacement KPIs
+    html += '<div class="kpis"' + (tgt ? '' : ' style="grid-template-columns:repeat(4,1fr);"') + '>' +
+      kpiCard({ title: "Pitch Rate", big: totalPitch + "%", sub: tgt ? "Target " + tgt.pr + "%" : "No target", alert: tgt ? totalPitch < tgt.pr : false }) +
+      kpiCard({ title: "Close Rate", big: totalClose + "%", sub: tgt ? "Target " + tgt.rcr + "%" : "No target", alert: tgt ? totalClose < tgt.rcr : false }) +
+      kpiCard({ title: "GROSS CLOSE RATE", big: totalRgcr + "%", sub: tgt ? "Target " + tgt.rgcr + "%" : "No target", good: tgt ? totalRgcr >= tgt.rgcr : null, alert: tgt ? totalRgcr < tgt.rgcr : false }) +
+      kpiCard({ title: "Replacement Sold", big: sum.closed, sub: sum.pitched + " pitched · " + sum.jobs + " jobs" }) +
+      (tgt ? kpiCard({ title: "Missed Sold KPI By", big: missed, sub: "$" + (missedAvgTicket / 1000).toFixed(1) + "K avg ticket", extra: "$" + (missedDollars / 1000).toFixed(0) + "K", alert: missed > 0 }) : "") +
+      '</div>';
+    html += '<p class="note" style="margin-top:18px;">RGCR = Pitch Rate × Close Rate; green ≥ target, red below. Missed = jobs × (target RGCR − actual RGCR), priced at each branch\'s average replacement ticket from ' + esc(D.AVG_TICKET_SOURCE) + '. Data lake refreshes ~3:00am; today\'s jobs appear tomorrow.</p>';
+
+    // Channels table (channel targets always exist, so Missed Sold always shows)
+    var chanRowsHtml = branchRows.map(function (r, idx) {
+      var bg = idx % 2 ? "#f3f7fa" : "#fff";
+      var cpr = pct(r.chanPitched, r.jobs), ccr = pct(r.chanSold, r.chanPitched), crgcr = Math.ceil(cpr * ccr / 100);
+      var good = crgcr >= chanTgt.rgcr;
+      var cMiss = crgcr < chanTgt.rgcr ? Math.ceil(r.jobs * (chanTgt.rgcr - crgcr) / 100) : 0;
+      var main = '<tr style="background:' + bg + ';">' +
+        '<td style="' + td + 'text-align:left;font-weight:600;">' + esc(r.branch) + '</td>' +
+        jobCell(r.branch, jobType, r.jobs, "chan") +
+        '<td style="' + td + '">' + r.estimates + '</td>' +
+        '<td style="' + td + 'border-left:1px solid #e3e9ee;font-weight:700;">' + (r.chanPitched || 0) + '</td>' +
+        '<td style="' + td + 'font-weight:700;">' + (r.chanSold || 0) + '</td>' +
+        '<td style="' + td + 'font-weight:700;color:' + rateColor(cpr, chanTgt.pr) + ';">' + cpr + '%</td>' +
+        '<td style="' + td + 'font-weight:700;color:' + rateColor(ccr, chanTgt.cr) + ';">' + ccr + '%</td>' +
+        '<td style="' + td + 'font-weight:800;background:' + (good ? "#e3f4e8" : "#fdeaea") + ';color:' + (good ? "#1a7a3c" : C.red) + ';">' + crgcr + '%</td>' +
+        missedCellHtml(cMiss, cMiss * D.CHANNEL_AVG_TICKET, false) + '</tr>';
+      var mix = '<tr style="background:' + bg + ';border-bottom:1px solid #e3e9ee;"><td colspan="9" style="padding:0 12px 10px 12px;">' +
+        '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:700;color:' + C.medBlue + ';min-width:90px;text-transform:uppercase;">Channel mix</span><div style="flex:1;">' +
+        mixBar([{ label: "IAQ", value: r.iaqSold || 0, color: D.CHAN_COLORS.IAQ }, { label: "Insulation", value: r.insSold || 0, color: D.CHAN_COLORS.INS }, { label: "Duct", value: r.ductSold || 0, color: D.CHAN_COLORS.DUCT }]) + '</div></div></td></tr>';
+      return main + mix;
+    }).join("");
+
+    var chGood = chanTotalRgcr >= chanTgt.rgcr;
+    var chanTotalsRow = '<tr style="background:#e8eef3;font-weight:800;color:' + C.darkBlue + ';">' +
+      '<td style="' + td + 'text-align:left;font-weight:800;">TOTALS</td>' +
+      '<td style="' + tdBold + '">' + sum.jobs + '</td>' +
+      '<td style="' + tdBold + '">' + sum.estimates + '</td>' +
+      '<td style="' + tdBold + 'border-left:1px solid #d4dde4;">' + sum.chanPitched + '</td>' +
+      '<td style="' + tdBold + '">' + sum.chanSold + '</td>' +
+      '<td style="' + tdBold + 'color:' + rateColor(chanTotalPitch, chanTgt.pr) + ';">' + chanTotalPitch + '%</td>' +
+      '<td style="' + tdBold + 'color:' + rateColor(chanTotalClose, chanTgt.cr) + ';">' + chanTotalClose + '%</td>' +
+      '<td style="' + tdBold + 'background:' + (chGood ? "#e3f4e8" : "#fdeaea") + ';color:' + (chGood ? "#1a7a3c" : C.red) + ';">' + chanTotalRgcr + '%</td>' +
+      missedCellHtml(chanMissedSales, chanMissedDollars, true) + '</tr>' +
+      '<tr style="background:#e8eef3;"><td colspan="9" style="padding:0 12px 10px 12px;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:800;color:' + C.darkBlue + ';min-width:90px;text-transform:uppercase;">Channel mix</span><div style="flex:1;">' +
+      mixBar([{ label: "IAQ", value: sum.iaqSold, color: D.CHAN_COLORS.IAQ }, { label: "Insulation", value: sum.insSold, color: D.CHAN_COLORS.INS }, { label: "Duct", value: sum.ductSold, color: D.CHAN_COLORS.DUCT }], true) + '</div></div></td></tr>';
+
+    html += '<div style="text-align:center;margin:34px 0 14px;">' +
+      '<h2>' + esc(jobType) + ' Channels Performance – by Branch</h2>' +
+      '<div style="font-size:12px;color:' + C.medBlue + ';margin-top:4px;font-weight:600;">Summary&nbsp; | &nbsp;' + esc(summaryRange) + '</div>' +
+      '<div style="font-size:12.5px;color:' + C.medBlue + ';margin-top:4px;font-weight:600;">Targets — PR ' + chanTgt.pr + '% · CR ' + chanTgt.cr + '% · CGCR ' + chanTgt.rgcr + '%</div></div>';
+
+    html += '<div class="card"><table><thead>' +
+      '<tr style="background:' + C.darkBlue + ';color:#fff;"><th rowspan="2" style="' + thBase("left") + '">Branch</th>' +
+      '<th colspan="2" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">' + esc(jobType) + '</th>' +
+      '<th colspan="6" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);border-left:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">Channels</th></tr>' +
+      '<tr style="background:' + C.darkBlue + ';color:#fff;"><th style="' + thBase() + '"># Jobs</th><th style="' + thBase() + '"># Est</th>' +
+      '<th style="' + thBase() + 'border-left:1px solid rgba(255,255,255,0.25);"># Pitched</th><th style="' + thBase() + '"># Closed</th>' +
+      '<th style="' + thBase() + '">% Pitch Rate</th><th style="' + thBase() + '">% Pitched Close Rate</th><th style="' + thBase() + '">% Gross Close Rate</th><th style="' + thBase() + '">Missed Sold</th></tr>' +
+      '</thead><tbody>' + chanRowsHtml + chanTotalsRow + '</tbody></table></div>';
+
+    html += '<div class="kpis" style="margin-bottom:8px;">' +
+      kpiCard({ title: "Pitch Rate", big: chanTotalPitch + "%", sub: "Target " + chanTgt.pr + "%", alert: chanTotalPitch < chanTgt.pr }) +
+      kpiCard({ title: "Close Rate", big: chanTotalClose + "%", sub: "Target " + chanTgt.cr + "%", alert: chanTotalClose < chanTgt.cr }) +
+      kpiCard({ title: "GROSS CLOSE RATE", big: chanTotalRgcr + "%", sub: "Target " + chanTgt.rgcr + "%", good: chGood, alert: !chGood }) +
+      kpiCard({ title: "Channels Sold", big: sum.chanSold, sub: sum.chanPitched + " pitched · " + sum.jobs + " jobs" }) +
+      kpiCard({ title: "Missed Sold KPI By", big: chanMissedSales, sub: "$" + (D.CHANNEL_AVG_TICKET / 1000).toFixed(1) + "K avg ticket", extra: "$" + (chanMissedDollars / 1000).toFixed(0) + "K", alert: chanMissedSales > 0 }) +
+      '</div>';
+    html += '<p class="note" style="margin-bottom:8px;">Channels consolidated across IAQ / Insulation / Duct (a job counts once even if it spans channels). Classified via cross-sale group, standalone duct-sealing excluded. Mix bars show each channel\'s share of sold channel jobs. Missed = jobs × (target CGCR − actual CGCR) × ' + D.CHANNEL_AVG_TICKET.toLocaleString() + ' fixed avg ticket.</p>';
+
+    return html;
+  }
+
+  var sel = document.getElementById("jobTypeSel");
+  JOB_TYPES.forEach(function (jt) {
+    if (!D.rowsByType[jt] || D.rowsByType[jt].length === 0) return;
+    var opt = document.createElement("option");
+    opt.value = jt; opt.textContent = jt;
+    sel.appendChild(opt);
+  });
+  var initial = D.initialJobType;
+  if (!D.rowsByType[initial] || D.rowsByType[initial].length === 0) {
+    initial = (sel.options[0] || {}).value || D.initialJobType;
+  }
+  sel.value = initial;
+
+  var brSel = document.getElementById("branchSel");
+  var allOpt = document.createElement("option");
+  allOpt.value = "ALL"; allOpt.textContent = "ALL";
+  brSel.appendChild(allOpt);
+  BRANCH_ORDER.forEach(function (b) {
+    var opt = document.createElement("option");
+    opt.value = b; opt.textContent = b;
+    brSel.appendChild(opt);
+  });
+  brSel.value = D.initialBranch || "ALL";
+
+  function draw() { document.getElementById("root").innerHTML = render(sel.value, brSel.value); }
+  sel.addEventListener("change", draw);
+  brSel.addEventListener("change", draw);
+  draw();
+})();
+
+</script>
+</body>
+</html>
