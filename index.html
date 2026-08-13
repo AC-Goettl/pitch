@@ -155,8 +155,15 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":20,"estimates":109,"pit
     var hasKey = section === "chan" ? "hasChan" : "hasRepl";
     var soldKey = section === "chan" ? "soldChan" : "soldRepl";
     var rows = cellRowsFor(branch, jobType).slice();
-    // Sort: Not Pitched (0) → Pitched/Not Sold (1) → Sold (2), then by job number.
-    var rankOf = function (r) { return r[soldKey] ? 2 : (r[hasKey] ? 1 : 0); };
+    // Sort by color: Not Pitched (0) → Pitched/Not Sold (1) → Sold (2) → No Target
+    // (3, black, last). Must mirror the per-row color logic (target is per the job's
+    // own type; channel targets always exist so no black in channel section).
+    var rankOf = function (r) {
+      if (r[soldKey]) return 2;
+      if (r[hasKey]) return 1;
+      var hasTarget = section === "chan" ? true : !!TARGETS[r.__jt];
+      return hasTarget ? 0 : 3;
+    };
     rows.sort(function (a, b) {
       return (rankOf(a) - rankOf(b)) || String(a.n).localeCompare(String(b.n), undefined, { numeric: true });
     });
