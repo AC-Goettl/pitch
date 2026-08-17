@@ -82,6 +82,12 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":26,"estimates":145,"pit
 (function () {
   var C = D.C, TARGETS = D.TARGETS, JOB_TYPES = D.JOB_TYPES, BRANCH_ORDER = D.BRANCH_ORDER;
   var pct = function (n, d) { return d > 0 ? Math.round((n / d) * 100) : 0; };
+  var fmtMoney = function (n) {
+    var v = Math.round(Number(n) || 0), a = Math.abs(v);
+    if (a >= 999500) return "$" + (v / 1000000).toFixed(2) + "M";
+    if (a >= 1000) return "$" + Math.round(v / 1000) + "K";
+    return "$" + v.toLocaleString();
+  };
   function channelTarget(jt) { var pr = 50, cr = jt === "D3" ? 20 : 30; return { pr: pr, cr: cr, rgcr: Math.round(pr * cr) / 100 }; }
   var fd = function (d) { if (!d) return ""; var p = d.split("-"); return parseInt(p[1]) + "/" + parseInt(p[2]) + "/" + p[0]; };
   var fd2 = function (d) { if (!d) return ""; var p = d.split("-"); return p[1] + "/" + p[2] + "/" + p[0].slice(2); };
@@ -248,6 +254,17 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":26,"estimates":145,"pit
     if (wsum === 0) return null;
     return { pr: Math.round(wpr / wsum), rcr: Math.round(wrcr / wsum), rgcr: Math.round(wrgcr / wsum) };
   }
+  function missedForBranchPub(sel, branchName) {
+    var total = 0;
+    membersOf(sel).forEach(function (jt) {
+      var t = TARGETS[jt]; if (!t) return;
+      var row = (D.rowsByType[jt] || []).filter(function (r) { return r.branch === branchName; })[0];
+      if (!row) return;
+      var pr = pct(row.pitched, row.jobs), cr = pct(row.closed, row.pitched), rgcr = Math.ceil(pr * cr / 100);
+      if (rgcr < t.rgcr) total += Math.ceil(row.jobs * (t.rgcr - rgcr) / 100);
+    });
+    return total;
+  }
   function chanTargetFor(sel) {
     var members = membersOf(sel), pr = 50, cr;
     if (members.length === 1) { cr = members[0] === "D3" ? 20 : 30; }
@@ -281,8 +298,9 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":26,"estimates":145,"pit
       // RGCR is ceiled to the whole percent first, so a branch that rounds up to
       // target (e.g. 39.5 → 40) counts as on-target and shows 0 missed.
       // Dollars priced off the whole count so count and $ stay consistent.
-      var belowTarget = rgcrTargetPct != null && rgcr < rgcrTargetPct;
-      var missedSales = belowTarget ? Math.ceil(r.jobs * (rgcrTargetPct - rgcr) / 100) : 0;
+      // Missed = sum of each member's own missed vs its own target (so a bucket
+      // doesn't apply D3's target to D2/D1 volume). Single type = its own missed.
+      var missedSales = missedForBranchPub(jobType, r.branch);
       var branchAvg = D.AVG_TICKET_BY_BRANCH[r.branch] != null ? D.AVG_TICKET_BY_BRANCH[r.branch] : D.AVG_TICKET_CONSOLIDATED;
       var o = {}; for (var k in r) o[k] = r[k];
       o.pitchRate = pr; o.closeRate = cr; o.rgcr = rgcr; o.missedSales = missedSales; o.missedDollars = missedSales * branchAvg;
@@ -341,7 +359,7 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":26,"estimates":145,"pit
     var missedCellHtml = function (cnt, dollars, boldNav) {
       var col = cnt > 0 ? C.red : C.darkBlue;
       return '<td style="' + td + 'font-weight:700;color:' + col + ';">' + cnt +
-        '<span style="display:block;font-size:10.5px;font-weight:' + (boldNav ? 700 : 600) + ';color:' + (boldNav ? C.navy : C.gray) + ';">$' + Math.round(dollars).toLocaleString() + '</span></td>';
+        '<span style="display:block;font-size:10.5px;font-weight:' + (boldNav ? 700 : 600) + ';color:' + (boldNav ? C.navy : C.gray) + ';">' + fmtMoney(dollars) + '</span></td>';
     };
 
     if (section === "repl") {
@@ -399,7 +417,7 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":26,"estimates":145,"pit
       kpiCard({ title: "Close Rate", big: totalClose + "%", sub: tgt ? "Target " + tgt.rcr + "%" : "No target", alert: tgt ? totalClose < tgt.rcr : false }) +
       kpiCard({ title: "GROSS CLOSE RATE", big: totalRgcr + "%", sub: tgt ? "Target " + tgt.rgcr + "%" : "No target", good: tgt ? totalRgcr >= tgt.rgcr : null, alert: tgt ? totalRgcr < tgt.rgcr : false }) +
       kpiCard({ title: "Replacement Sold", big: sum.closed, sub: sum.pitched + " pitched · " + sum.jobs + " jobs" }) +
-      (tgt ? kpiCard({ title: "Missed Sold KPI By", big: missed, sub: "$" + (missedAvgTicket / 1000).toFixed(1) + "K Avg Sale", extra: "$" + (missedDollars / 1000).toFixed(0) + "K", alert: missed > 0 }) : "") +
+      (tgt ? kpiCard({ title: "Missed Sold KPI By", big: missed, sub: "$" + (missedAvgTicket / 1000).toFixed(1) + "K Avg Sale", extra: fmtMoney(missedDollars), alert: missed > 0 }) : "") +
       '</div>';
     html += '<p class="note" style="margin-top:18px;">RGCR = Pitch Rate × Close Rate; green ≥ target, red below. Missed = jobs × (target RGCR − actual RGCR), priced at each branch\'s average replacement ticket from ' + esc(D.AVG_TICKET_SOURCE) + '. Data lake refreshes ~3:00am; today\'s jobs appear tomorrow.</p>';
     } // end repl section
@@ -457,7 +475,7 @@ const D = {"rowsByType":{"D3":[{"branch":"Austin","jobs":26,"estimates":145,"pit
       kpiCard({ title: "Close Rate", big: chanTotalClose + "%", sub: "Target " + chanTgt.cr + "%", alert: chanTotalClose < chanTgt.cr }) +
       kpiCard({ title: "GROSS CLOSE RATE", big: chanTotalRgcr + "%", sub: "Target " + chanTgt.rgcr + "%", good: chGood, alert: !chGood }) +
       kpiCard({ title: "Channels Sold", big: sum.chanSold, sub: sum.chanPitched + " pitched · " + sum.jobs + " jobs" }) +
-      kpiCard({ title: "Missed Sold KPI By", big: chanMissedSales, sub: "$" + (D.CHANNEL_AVG_TICKET / 1000).toFixed(1) + "K Avg Sale", extra: "$" + (chanMissedDollars / 1000).toFixed(0) + "K", alert: chanMissedSales > 0 }) +
+      kpiCard({ title: "Missed Sold KPI By", big: chanMissedSales, sub: "$" + (D.CHANNEL_AVG_TICKET / 1000).toFixed(1) + "K Avg Sale", extra: fmtMoney(chanMissedDollars), alert: chanMissedSales > 0 }) +
       '</div>';
     html += '<p class="note" style="margin-bottom:8px;">Channels consolidated across IAQ / Insulation / Duct (a job counts once even if it spans channels). Classified via cross-sale group, standalone duct-sealing excluded. Mix bars show each channel\'s share of sold channel jobs. Missed = jobs × (target CGCR − actual CGCR) × ' + D.CHANNEL_AVG_TICKET.toLocaleString() + ' fixed Avg Sale.</p>';
     } // end chan section
