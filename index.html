@@ -16,23 +16,22 @@
   .card { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.07); margin-bottom: 18px; }
   .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
   .note { text-align: center; font-size: 11px; color: #C0B8B6; }
+  .filters { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-bottom: 14px; flex-wrap: nowrap; }
+  .flt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .flt label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #3678A0; padding-left: 2px; white-space: nowrap; }
+  .flt select { min-width: 0; width: 100%; font-size: 13px; padding: 7px 9px; }
+  @media (max-width: 1100px) { .filters { flex-wrap: wrap; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap;">
-    <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;">KPI</label>
-    <select id="sectionSel"><option value="repl">Replacement</option><option value="chan">Channels</option></select>
-    <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;margin-left:8px;">Job type</label>
-    <select id="jobTypeSel"></select>
-    <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;margin-left:8px;">Branch</label>
-    <select id="branchSel"></select>
-    <label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;margin-left:8px;">Date</label>
-    <select id="dateSel"></select>
-    <span id="smWrap" style="display:contents;"><label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;margin-left:8px;">Service Mgr</label>
-    <select id="smSel"></select></span>
-    <span id="techWrap" style="display:contents;"><label style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#3678A0;margin-left:8px;">Technician</label>
-    <select id="techSel"></select></span>
+  <div class="filters">
+    <div class="flt"><label>KPI</label><select id="sectionSel"><option value="repl">Replacement</option><option value="chan">Channels</option></select></div>
+    <div class="flt"><label>Branch</label><select id="branchSel"></select></div>
+    <div class="flt"><label>Job type</label><select id="jobTypeSel"></select></div>
+    <div class="flt"><label>Date</label><select id="dateSel"></select></div>
+    <div class="flt" id="smWrap"><label>Service Mgr</label><select id="smSel"></select></div>
+    <div class="flt" id="techWrap"><label>Technician</label><select id="techSel"></select></div>
   </div>
   <div id="root"></div>
 </div>
@@ -553,7 +552,7 @@ const D = {"rowsByType": {"D2": [{"branch": "San Antonio", "jobs": 64, "estimate
     });
     smSel.value = keep;
     if (smSel.value !== keep) smSel.value = "ALL";
-    if (smWrap) smWrap.style.display = any ? "contents" : "none";
+    if (smWrap) smWrap.style.display = any ? "" : "none";
   }
   // Technician dropdown: narrowed to techs with jobs under the selected Service
   // Manager and in the selected branch. A tech is listed (and credited) on any
@@ -576,7 +575,7 @@ const D = {"rowsByType": {"D2": [{"branch": "San Antonio", "jobs": 64, "estimate
     });
     techSel.value = keep;
     if (techSel.value !== keep) techSel.value = "ALL";
-    if (techWrap) techWrap.style.display = any ? "contents" : "none";
+    if (techWrap) techWrap.style.display = any ? "" : "none";
   }
   if (smSel) { smSel.value = D.initialSM || "ALL"; rebuildSM(); }
   if (techSel) { techSel.value = D.initialTech || "ALL"; rebuildTech(); }
