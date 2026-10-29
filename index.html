@@ -20,6 +20,11 @@
   .flt { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
   .flt label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #3678A0; padding-left: 2px; white-space: nowrap; }
   .flt select { min-width: 0; width: 100%; font-size: 13px; padding: 7px 9px; }
+  .flt label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .tog { display: inline-flex; border: 1px solid #77B2D0; border-radius: 6px; overflow: hidden; }
+  .tog button { font-family: inherit; font-size: 9.5px; font-weight: 800; letter-spacing: 0.04em; padding: 2px 6px; border: none; background: #fff; color: #3678A0; cursor: pointer; line-height: 1.3; }
+  .tog button.on { background: #003963; color: #fff; }
+  select option { font-weight: 600; }
   @media (max-width: 1100px) { .filters { flex-wrap: wrap; } }
 </style>
 </head>
@@ -32,8 +37,8 @@
     <div class="flt"><label>Job type</label><select id="jobTypeSel"></select></div>
     <div class="flt"><label>Date</label><select id="dateSel"></select></div>
     <div class="flt" id="customWrap"><label>From – To (months)</label><div style="display:flex;gap:6px;"><select id="cFromSel"></select><select id="cToSel"></select></div></div>
-    <div class="flt" id="smWrap"><label>Service Mgr</label><select id="smSel"></select></div>
-    <div class="flt" id="techWrap"><label>Technician</label><select id="techSel"></select></div>
+    <div class="flt" id="smWrap"><label>Service Mgr <span class="tog" id="smTog" title="Rank by Pitch Rate or Gross Close Rate"><button type="button" data-m="PR">PR</button><button type="button" data-m="GCR">GCR</button></span></label><select id="smSel"></select></div>
+    <div class="flt" id="techWrap"><label>Technician <span class="tog" id="techTog" title="Rank by Pitch Rate or Gross Close Rate"><button type="button" data-m="PR">PR</button><button type="button" data-m="GCR">GCR</button></span></label><select id="techSel"></select></div>
   </div>
   <div id="root"></div>
 </div>
@@ -107,17 +112,50 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     return { rowsByType: rowsByType, jobNumsByCell: cells };
   }
   // Which managers / techs have jobs in a window (optionally within a branch / under a manager)
-  function presence(d0, d1, branchIdx, smIdx) {
-    var sms = {}, techs = {};
+  // Per-person stats for the dropdowns: jobs / pitched / closed for every manager
+  // and tech with jobs in the window + branch (+ manager for techs), within the
+  // selected job-type bucket and KPI (replacement, or channels / one channel).
+  function personStats(d0, d1, branchIdx, smIdx, jtIdxSet, section, chan) {
+    var sms = {}, techs = {}, cb = CHAN_BITS[chan] || null;
+    function bump(tbl, k, p, c) { var s = tbl[k] || (tbl[k] = { jobs: 0, pitched: 0, closed: 0 }); s.jobs++; if (p) s.pitched++; if (c) s.closed++; }
     for (var i = 0; i < J.rows.length; i++) {
       var r = J.rows[i];
       if (r[5] < d0 || r[5] > d1) continue;
       if (branchIdx >= 0 && r[2] !== branchIdx) continue;
       if (smIdx >= 0 && r[6] !== smIdx) continue;
-      if (r[6] >= 0) sms[r[6]] = 1;
-      for (var t = 0; t < r[7].length; t++) techs[r[7][t]] = 1;
+      if (jtIdxSet && !jtIdxSet[r[3]]) continue;
+      var f = r[8], p, c;
+      if (section === "chan") { p = cb ? !!(f & cb[0]) : !!(f & 4); c = cb ? !!(f & cb[1]) : !!(f & 8); }
+      else { p = !!(f & 1); c = !!(f & 2); }
+      if (r[6] >= 0) bump(sms, r[6], p, c);
+      for (var t = 0; t < r[7].length; t++) bump(techs, r[7][t], p, c);
     }
     return { sms: sms, techs: techs };
+  }
+  function metricOf(s, which) {
+    var pr = pct(s.pitched, s.jobs), cr = pct(s.closed, s.pitched);
+    return which === "PR" ? pr : Math.ceil(pr * cr / 100);   // GCR, same formula as the table
+  }
+  var TIER = [ { bg: "#e3f4e8", fg: "#1a7a3c" }, { bg: "#fff4d6", fg: "#8a6d00" }, { bg: "#fdeaea", fg: "#CD1E1F" } ];
+  // Fill a dropdown with people sorted by the metric (ALL first), coloring the
+  // top / middle / bottom third green / yellow / red. Keeps the current pick.
+  function fillRanked(selEl, wrapEl, names, stats, lookup, which, keep, unassigned) {
+    selEl.innerHTML = ""; addOpt(selEl, "ALL", "ALL");
+    var list = names.map(function (i) { return { i: i, name: lookup[i], s: stats[i], m: metricOf(stats[i], which) }; });
+    list.sort(function (a, b) { return (b.m - a.m) || (b.s.jobs - a.s.jobs) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
+    var n = list.length, tierOf = {};
+    list.forEach(function (p, k) {
+      var tier = n < 3 ? 1 : Math.min(2, Math.floor(k * 3 / n));
+      tierOf[p.name] = tier;
+      var o = addOpt(selEl, p.name, p.name + "  —  " + p.m + "%  (" + p.s.jobs + " jobs)");
+      o.style.background = TIER[tier].bg; o.style.color = TIER[tier].fg; o.style.fontWeight = "600";
+    });
+    selEl.value = keep; if (selEl.value !== keep) selEl.value = "ALL";
+    var t = tierOf[selEl.value];
+    selEl.style.background = t == null ? "#fff" : TIER[t].bg;
+    selEl.style.color = t == null ? "" : TIER[t].fg;
+    selEl.style.fontWeight = t == null ? "" : "700";
+    if (wrapEl) wrapEl.style.display = n ? "" : "none";
   }
 
   // ── Date windows (all derived from D.currentDate = run date; all EXCLUDE it) ──
@@ -419,8 +457,10 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
 
     var totalPitch = pct(sum.pitched, sum.jobs), totalClose = pct(sum.closed, sum.pitched), totalRgcr = Math.ceil(totalPitch * totalClose / 100);
     var chanTotalPitch = pct(sum.chanPitched, sum.jobs), chanTotalClose = pct(sum.chanSold, sum.chanPitched), chanTotalRgcr = Math.ceil(chanTotalPitch * chanTotalClose / 100);
-    var chanTgt = chanTargetFor(jobType);
-    var chanMissedSales = branchRows.reduce(function (a, r) {
+    // Targets exist for Channels consolidated only; a single channel has none,
+    // so rates render neutral and the Missed Sold column/card are omitted.
+    var chanTgt = D.activeChan ? null : chanTargetFor(jobType);
+    var chanMissedSales = !chanTgt ? 0 : branchRows.reduce(function (a, r) {
       var cpr = pct(r.chanPitched, r.jobs);
       var ccr = pct(r.chanSold, r.chanPitched);
       var crgcr = Math.ceil(cpr * ccr / 100);
@@ -448,7 +488,8 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
       '<span style="font-weight:600;font-size:15px;color:' + C.medBlue + ';">Summary&nbsp; | &nbsp;' + esc((D.activeWindow ? D.activeWindow.label + " · " : "") + curRangeLabel()) + (D.rangeNote ? ' <span style="font-weight:600;color:' + C.gray + ';">' + esc(D.rangeNote) + '</span>' : '') + (D.activeSM ? '&nbsp; | &nbsp;' + esc(D.activeSM) : '') + (D.activeTech ? '&nbsp; | &nbsp;' + esc(D.activeTech) : '') + '</span>' +
       '<span style="height:2px;width:80px;background:' + C.darkBlue + ';"></span></div>' +
       (section === "chan"
-        ? '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.medBlue + ';">Targets — PR ' + chanTgt.pr + '% · CR ' + chanTgt.cr + '% · CGCR ' + chanTgt.rgcr + '%</div>'
+        ? (chanTgt ? '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.medBlue + ';">Targets — PR ' + chanTgt.pr + '% · CR ' + chanTgt.cr + '% · CGCR ' + chanTgt.rgcr + '%</div>'
+                   : '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.gray + ';">No targets set for ' + esc(CHAN_NAMES[D.activeChan]) + ' individually</div>')
         : (tgt ? '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.medBlue + ';">Targets — PR ' + tgt.pr + '% · RCR ' + tgt.rcr + '% · RGCR ' + tgt.rgcr + '%</div>'
                : '<div style="margin-top:8px;font-size:12.5px;font-weight:600;color:' + C.gray + ';">No targets set for ' + esc(jobTypeLabel) + '</div>')) +
       '</div>';
@@ -521,40 +562,40 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     } // end repl section
 
     if (section === "chan") {
-    // Channels table (channel targets always exist, so Missed Sold always shows)
+    var chanCols = chanTgt ? 9 : 8;   // Missed Sold column only when targets exist
     var chanRowsHtml = branchRows.map(function (r, idx) {
       var bg = idx % 2 ? "#f3f7fa" : "#fff";
       var cpr = pct(r.chanPitched, r.jobs), ccr = pct(r.chanSold, r.chanPitched), crgcr = Math.ceil(cpr * ccr / 100);
-      var good = crgcr >= chanTgt.rgcr;
-      var cMiss = crgcr < chanTgt.rgcr ? Math.ceil(r.jobs * (chanTgt.rgcr - crgcr) / 100) : 0;
+      var good = chanTgt ? crgcr >= chanTgt.rgcr : null;
+      var cMiss = chanTgt && crgcr < chanTgt.rgcr ? Math.ceil(r.jobs * (chanTgt.rgcr - crgcr) / 100) : 0;
       var main = '<tr style="background:' + bg + ';">' +
         '<td style="' + td + 'text-align:left;font-weight:600;">' + esc(r.branch) + '</td>' +
         jobCell(r.branch, jobType, r.jobs, "chan") +
         '<td style="' + td + '">' + r.estimates + '</td>' +
         '<td style="' + td + 'border-left:1px solid #e3e9ee;font-weight:700;">' + (r.chanPitched || 0) + '</td>' +
         '<td style="' + td + 'font-weight:700;">' + (r.chanSold || 0) + '</td>' +
-        '<td style="' + td + 'font-weight:700;color:' + rateColor(cpr, chanTgt.pr) + ';">' + cpr + '%</td>' +
-        '<td style="' + td + 'font-weight:700;color:' + rateColor(ccr, chanTgt.cr) + ';">' + ccr + '%</td>' +
-        '<td style="' + td + 'font-weight:800;background:' + (good ? "#e3f4e8" : "#fdeaea") + ';color:' + (good ? "#1a7a3c" : C.red) + ';">' + crgcr + '%</td>' +
-        missedCellHtml(cMiss, cMiss * D.CHANNEL_AVG_TICKET, false) + '</tr>';
-      var mix = '<tr style="background:' + bg + ';border-bottom:1px solid #e3e9ee;"><td colspan="9" style="padding:0 12px 10px 12px;">' +
+        '<td style="' + td + 'font-weight:700;color:' + rateColor(cpr, chanTgt ? chanTgt.pr : null) + ';">' + cpr + '%</td>' +
+        '<td style="' + td + 'font-weight:700;color:' + rateColor(ccr, chanTgt ? chanTgt.cr : null) + ';">' + ccr + '%</td>' +
+        '<td style="' + td + 'font-weight:800;' + (good == null ? 'color:' + C.darkBlue : 'background:' + (good ? "#e3f4e8" : "#fdeaea") + ';color:' + (good ? "#1a7a3c" : C.red)) + ';">' + crgcr + '%</td>' +
+        (chanTgt ? missedCellHtml(cMiss, cMiss * D.CHANNEL_AVG_TICKET, false) : '') + '</tr>';
+      var mix = '<tr style="background:' + bg + ';border-bottom:1px solid #e3e9ee;"><td colspan="' + chanCols + '" style="padding:0 12px 10px 12px;">' +
         '<div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:700;color:' + C.medBlue + ';min-width:90px;text-transform:uppercase;">Channel mix</span><div style="flex:1;">' +
         mixBar([{ label: "IAQ", value: r.iaqSold || 0, color: D.CHAN_COLORS.IAQ }, { label: "Insulation", value: r.insSold || 0, color: D.CHAN_COLORS.INS }, { label: "Duct", value: r.ductSold || 0, color: D.CHAN_COLORS.DUCT }]) + '</div></div></td></tr>';
       return main + mix;
     }).join("");
 
-    var chGood = chanTotalRgcr >= chanTgt.rgcr;
+    var chGood = chanTgt ? chanTotalRgcr >= chanTgt.rgcr : null;
     var chanTotalsRow = '<tr style="background:#e8eef3;font-weight:800;color:' + C.darkBlue + ';">' +
       '<td style="' + td + 'text-align:left;font-weight:800;">TOTALS</td>' +
       '<td style="' + tdBold + '">' + sum.jobs + '</td>' +
       '<td style="' + tdBold + '">' + sum.estimates + '</td>' +
       '<td style="' + tdBold + 'border-left:1px solid #d4dde4;">' + sum.chanPitched + '</td>' +
       '<td style="' + tdBold + '">' + sum.chanSold + '</td>' +
-      '<td style="' + tdBold + 'color:' + rateColor(chanTotalPitch, chanTgt.pr) + ';">' + chanTotalPitch + '%</td>' +
-      '<td style="' + tdBold + 'color:' + rateColor(chanTotalClose, chanTgt.cr) + ';">' + chanTotalClose + '%</td>' +
-      '<td style="' + tdBold + 'background:' + (chGood ? "#e3f4e8" : "#fdeaea") + ';color:' + (chGood ? "#1a7a3c" : C.red) + ';">' + chanTotalRgcr + '%</td>' +
-      missedCellHtml(chanMissedSales, chanMissedDollars, true) + '</tr>' +
-      '<tr style="background:#e8eef3;"><td colspan="9" style="padding:0 12px 10px 12px;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:800;color:' + C.darkBlue + ';min-width:90px;text-transform:uppercase;">Channel mix</span><div style="flex:1;">' +
+      '<td style="' + tdBold + 'color:' + rateColor(chanTotalPitch, chanTgt ? chanTgt.pr : null) + ';">' + chanTotalPitch + '%</td>' +
+      '<td style="' + tdBold + 'color:' + rateColor(chanTotalClose, chanTgt ? chanTgt.cr : null) + ';">' + chanTotalClose + '%</td>' +
+      '<td style="' + tdBold + (chGood == null ? 'color:' + C.darkBlue : 'background:' + (chGood ? "#e3f4e8" : "#fdeaea") + ';color:' + (chGood ? "#1a7a3c" : C.red)) + ';">' + chanTotalRgcr + '%</td>' +
+      (chanTgt ? missedCellHtml(chanMissedSales, chanMissedDollars, true) : '') + '</tr>' +
+      '<tr style="background:#e8eef3;"><td colspan="' + chanCols + '" style="padding:0 12px 10px 12px;"><div style="display:flex;align-items:center;gap:10px;"><span style="font-size:10px;font-weight:800;color:' + C.darkBlue + ';min-width:90px;text-transform:uppercase;">Channel mix</span><div style="flex:1;">' +
       mixBar([{ label: "IAQ", value: sum.iaqSold, color: D.CHAN_COLORS.IAQ }, { label: "Insulation", value: sum.insSold, color: D.CHAN_COLORS.INS }, { label: "Duct", value: sum.ductSold, color: D.CHAN_COLORS.DUCT }], true) + '</div></div></td></tr>';
 
     html += '<div style="text-align:center;margin:6px 0 14px;"></div>';
@@ -562,20 +603,20 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     html += '<div class="card"><table><thead>' +
       '<tr style="background:' + C.darkBlue + ';color:#fff;"><th rowspan="2" style="' + thBase("left") + '">Branch</th>' +
       '<th colspan="2" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">' + esc(jobTypeLabel) + '</th>' +
-      '<th colspan="6" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);border-left:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">Channels</th></tr>' +
+      '<th colspan="' + (chanCols - 3) + '" style="' + thBase() + 'border-bottom:1px solid rgba(255,255,255,0.25);border-left:1px solid rgba(255,255,255,0.25);font-size:13px;letter-spacing:0.04em;">' + esc(CHAN_NAMES[D.activeChan] || "Channels") + '</th></tr>' +
       '<tr style="background:' + C.darkBlue + ';color:#fff;"><th style="' + thBase() + '"># Jobs</th><th style="' + thBase() + '"># Est</th>' +
       '<th style="' + thBase() + 'border-left:1px solid rgba(255,255,255,0.25);"># Pitched</th><th style="' + thBase() + '"># Closed</th>' +
-      '<th style="' + thBase() + '">% Pitch Rate</th><th style="' + thBase() + '">% Pitched Close Rate</th><th style="' + thBase() + '">% Gross Close Rate</th><th style="' + thBase() + '">Missed Sold</th></tr>' +
+      '<th style="' + thBase() + '">% Pitch Rate</th><th style="' + thBase() + '">% Pitched Close Rate</th><th style="' + thBase() + '">% Gross Close Rate</th>' + (chanTgt ? '<th style="' + thBase() + '">Missed Sold</th>' : '') + '</tr>' +
       '</thead><tbody>' + chanRowsHtml + chanTotalsRow + '</tbody></table></div>';
 
     html += '<div class="kpis" style="margin-bottom:8px;">' +
-      kpiCard({ title: "Pitch Rate", big: chanTotalPitch + "%", sub: "Target " + chanTgt.pr + "%", alert: chanTotalPitch < chanTgt.pr }) +
-      kpiCard({ title: "Close Rate", big: chanTotalClose + "%", sub: "Target " + chanTgt.cr + "%", alert: chanTotalClose < chanTgt.cr }) +
-      kpiCard({ title: "GROSS CLOSE RATE", big: chanTotalRgcr + "%", sub: "Target " + chanTgt.rgcr + "%", good: chGood, alert: !chGood }) +
+      kpiCard({ title: "Pitch Rate", big: chanTotalPitch + "%", sub: chanTgt ? "Target " + chanTgt.pr + "%" : "No target", alert: !!chanTgt && chanTotalPitch < chanTgt.pr }) +
+      kpiCard({ title: "Close Rate", big: chanTotalClose + "%", sub: chanTgt ? "Target " + chanTgt.cr + "%" : "No target", alert: !!chanTgt && chanTotalClose < chanTgt.cr }) +
+      kpiCard({ title: "GROSS CLOSE RATE", big: chanTotalRgcr + "%", sub: chanTgt ? "Target " + chanTgt.rgcr + "%" : "No target", good: chGood === true, alert: chGood === false }) +
       kpiCard({ title: (CHAN_NAMES[D.activeChan] || "Channels") + " Sold", big: sum.chanSold, sub: sum.chanPitched + " pitched · " + sum.jobs + " jobs" }) +
-      kpiCard({ title: "Missed Sold KPI By", big: chanMissedSales, sub: "$" + (D.CHANNEL_AVG_TICKET / 1000).toFixed(1) + "K Avg Sale", extra: fmtMoney(chanMissedDollars), alert: chanMissedSales > 0 }) +
+      (chanTgt ? kpiCard({ title: "Missed Sold KPI By", big: chanMissedSales, sub: "$" + (D.CHANNEL_AVG_TICKET / 1000).toFixed(1) + "K Avg Sale", extra: fmtMoney(chanMissedDollars), alert: chanMissedSales > 0 }) : '') +
       '</div>';
-    html += '<p class="note" style="margin-bottom:8px;">' + (D.activeChan ? esc(CHAN_NAMES[D.activeChan]) + ' only — pitched/sold count ' + esc(CHAN_NAMES[D.activeChan]) + ' lines; other channels on the same job are ignored.' : 'Channels consolidated across IAQ / Insulation / Duct (a job counts once even if it spans channels).') + ' Classified via cross-sale group, standalone duct-sealing excluded. Mix bars show each channel\'s share of sold channel jobs. Missed = jobs × (target CGCR − actual CGCR) × ' + D.CHANNEL_AVG_TICKET.toLocaleString() + ' fixed Avg Sale.</p>';
+    html += '<p class="note" style="margin-bottom:8px;">' + (D.activeChan ? esc(CHAN_NAMES[D.activeChan]) + ' only — pitched/sold count ' + esc(CHAN_NAMES[D.activeChan]) + ' lines; other channels on the same job are ignored.' : 'Channels consolidated across IAQ / Insulation / Duct (a job counts once even if it spans channels).') + ' Classified via cross-sale group, standalone duct-sealing excluded. Mix bars show each channel\'s share of sold channel jobs.' + (chanTgt ? ' Missed = jobs × (target CGCR − actual CGCR) × ' + D.CHANNEL_AVG_TICKET.toLocaleString() + ' fixed Avg Sale.' : '') + '</p>';
     } // end chan section
 
     return html;
@@ -653,38 +694,41 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
   // Lists are narrowed to people with jobs in the selected window + branch (+ manager for techs).
   var smSel = document.getElementById("smSel"), smWrap = document.getElementById("smWrap");
   var techSel = document.getElementById("techSel"), techWrap = document.getElementById("techWrap");
+  // PR / GCR toggles beside each label
+  var smMetric = "GCR", techMetric = "GCR";
+  function wireTog(id, get, set) {
+    var tog = document.getElementById(id); if (!tog) return;
+    var btns = tog.querySelectorAll("button");
+    function paint() { btns.forEach(function (b) { b.classList.toggle("on", b.getAttribute("data-m") === get()); }); }
+    btns.forEach(function (b) { b.addEventListener("click", function (e) { e.preventDefault(); set(b.getAttribute("data-m")); paint(); rebuildPeople(); }); });
+    paint();
+  }
   function rebuildPeople() {
     var w = windowFor(curKey());
     var bIdx = brSel.value === "ALL" ? -1 : J.branches.indexOf(brSel.value);
+    var jtSet = {}; membersOf(sel.value).forEach(function (jt) { var k = J.jobTypes.indexOf(jt); if (k >= 0) jtSet[k] = 1; });
+    var section = secSel ? secSel.value : "repl", chan = curChan();
     if (smSel) {
-      var keep = smSel.value || "ALL", p = presence(w.s, w.e, bIdx, -1);
-      smSel.innerHTML = ""; addOpt(smSel, "ALL", "ALL");
-      var names = Object.keys(p.sms).map(function (i) { return J.sms[+i]; });
-      names.sort(function (x, y) { var ux = x === J.smUnassigned, uy = y === J.smUnassigned; return ux !== uy ? (ux ? 1 : -1) : x.toLowerCase().localeCompare(y.toLowerCase()); });
-      names.forEach(function (n) { addOpt(smSel, n, n); });
-      smSel.value = keep; if (smSel.value !== keep) smSel.value = "ALL";
-      if (smWrap) smWrap.style.display = names.length ? "" : "none";
+      var keep = smSel.value || "ALL", p = personStats(w.s, w.e, bIdx, -1, jtSet, section, chan);
+      fillRanked(smSel, smWrap, Object.keys(p.sms).map(Number), p.sms, J.sms, smMetric, keep);
     }
     if (techSel) {
       var keepT = techSel.value || "ALL";
       var smIdx = (smSel && smSel.value !== "ALL") ? J.sms.indexOf(smSel.value) : -1;
-      var pt = presence(w.s, w.e, bIdx, smIdx);
-      techSel.innerHTML = ""; addOpt(techSel, "ALL", "ALL");
-      var tn = Object.keys(pt.techs).map(function (i) { return J.techs[+i]; }).sort(function (x, y) { return x.toLowerCase().localeCompare(y.toLowerCase()); });
-      tn.forEach(function (n) { addOpt(techSel, n, n); });
-      techSel.value = keepT; if (techSel.value !== keepT) techSel.value = "ALL";
-      if (techWrap) techWrap.style.display = tn.length ? "" : "none";
+      var pt = personStats(w.s, w.e, bIdx, smIdx, jtSet, section, chan);
+      fillRanked(techSel, techWrap, Object.keys(pt.techs).map(Number), pt.techs, J.techs, techMetric, keepT);
     }
   }
-  if (smSel) smSel.value = D.initialSM || "ALL";
-  if (techSel) techSel.value = D.initialTech || "ALL";
-  rebuildPeople();
-
   // Channel sub-filter — only shown when KPI = Channels
   var chanSel = document.getElementById("chanSel"), chanWrap = document.getElementById("chanWrap");
   function syncChan() { if (chanWrap) chanWrap.style.display = (secSel && secSel.value === "chan") ? "" : "none"; }
   syncChan();
   function curChan() { return (secSel && secSel.value === "chan" && chanSel) ? chanSel.value : "ALL"; }
+  if (smSel) smSel.value = D.initialSM || "ALL";
+  if (techSel) techSel.value = D.initialTech || "ALL";
+  wireTog("smTog", function () { return smMetric; }, function (v) { smMetric = v; });
+  wireTog("techTog", function () { return techMetric; }, function (v) { techMetric = v; });
+  rebuildPeople();
 
   function draw() { document.getElementById("root").innerHTML = render(sel.value, brSel.value, secSel ? secSel.value : "repl"); }
   function reapply() {
@@ -692,15 +736,15 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     draw();
   }
   function onDateChange() { syncCustom(); rebuildPeople(); reapply(); }
-  sel.addEventListener("change", draw);
+  sel.addEventListener("change", function () { rebuildPeople(); draw(); });
   brSel.addEventListener("change", function () { rebuildPeople(); reapply(); });
-  if (secSel) secSel.addEventListener("change", function () { syncChan(); reapply(); });
-  if (chanSel) chanSel.addEventListener("change", reapply);
+  if (secSel) secSel.addEventListener("change", function () { syncChan(); rebuildPeople(); reapply(); });
+  if (chanSel) chanSel.addEventListener("change", function () { rebuildPeople(); reapply(); });
   if (dateSel) dateSel.addEventListener("change", onDateChange);
   if (cFromSel) cFromSel.addEventListener("change", onDateChange);
   if (cToSel) cToSel.addEventListener("change", onDateChange);
   if (smSel) smSel.addEventListener("change", function () { rebuildPeople(); reapply(); });
-  if (techSel) techSel.addEventListener("change", reapply);
+  if (techSel) techSel.addEventListener("change", function () { rebuildPeople(); reapply(); });
   reapply();
 })();
 
