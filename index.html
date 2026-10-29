@@ -38,9 +38,9 @@
     <div class="flt"><label>Job type</label><select id="jobTypeSel"></select></div>
     <div class="flt"><label>Date</label><select id="dateSel"></select></div>
     <div class="flt" id="customWrap"><label>From – To (months)</label><div style="display:flex;gap:6px;"><select id="cFromSel"></select><select id="cToSel"></select></div></div>
+    <div class="flt"><label>Mix by</label><select id="mixSel"><option value="jobs">Sold jobs</option><option value="rev">Revenue</option></select></div>
     <div class="flt" id="smWrap"><label>Service Mgr <span class="tog" id="smTog" title="Rank by Pitch Rate or Gross Close Rate"><button type="button" data-m="PR">PR</button><button type="button" data-m="GCR">GCR</button></span></label><select id="smSel"></select></div>
     <div class="flt" id="techWrap"><label>Technician <span class="tog" id="techTog" title="Rank by Pitch Rate or Gross Close Rate"><button type="button" data-m="PR">PR</button><button type="button" data-m="GCR">GCR</button></span></label><select id="techSel"></select></div>
-    <div class="flt"><label>Mix by</label><select id="mixSel"><option value="jobs">Sold jobs</option><option value="rev">Revenue</option></select></div>
   </div>
   <div id="root"></div>
 </div>
@@ -213,12 +213,12 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     if (key === "MTD") {
       if (curD === 1) { var py = curM === 0 ? curY - 1 : curY, pm = curM === 0 ? 11 : curM - 1; s = monthStart(py, pm); e = monthEnd(py, pm); }
       else { s = monthStart(curY, curM); e = YEST; }
-      label = "Month-to-Date";
+      label = "MTD";
     } else if (key === "T7")  { s = CUR - 7;  e = YEST; label = "Trailing 7"; }
     else if (key === "T14") { s = CUR - 14; e = YEST; label = "Trailing 14"; }
     else if (key === "T30") { s = CUR - 30; e = YEST; label = "Trailing 30"; }
-    else if (key === "QTD") { var q0 = Math.floor(curM / 3) * 3; s = monthStart(curY, q0); e = YEST; label = "Quarter-to-Date"; }
-    else if (key === "YTD") { s = monthStart(curY, 0); e = YEST; label = "Year-to-Date"; }
+    else if (key === "QTD") { var q0 = Math.floor(curM / 3) * 3; s = monthStart(curY, q0); e = YEST; label = "QTD"; }
+    else if (key === "YTD") { s = monthStart(curY, 0); e = YEST; label = "YTD"; }
     else if (key.slice(0,2) === "M:") { var p = key.slice(2).split("-"); s = monthStart(+p[0], +p[1]-1); e = clampEnd(monthEnd(+p[0], +p[1]-1)); label = MONTHS[+p[1]-1] + " " + p[0]; }
     else if (key.slice(0,2) === "Q:") { var q = key.slice(2).split("-"); var qy = +q[0], qn = +q[1]; s = monthStart(qy, (qn-1)*3); e = clampEnd(monthEnd(qy, (qn-1)*3 + 2)); label = "Q" + qn + " " + qy; }
     else if (key.slice(0,2) === "C:") {   // custom "C:YYYY-MM..YYYY-MM" (month through month)
@@ -526,7 +526,7 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
                                  : Math.round(((PT.WP || 0) + (PT.WH || 0) + (PT.SD || 0)) / 3);
       }
     }
-    var chanLabel = isPlumb ? (CHAN_NAMES[D.activeChan] || "Cross-Sell") : (CHAN_NAMES[D.activeChan] || "Channels");
+    var chanLabel = isPlumb ? (CHAN_NAMES[D.activeChan] || "Plumbing") : (CHAN_NAMES[D.activeChan] || "Channels");
     var chanMissedSales = !chanTgt ? 0 : branchRows.reduce(function (a, r) {
       var cpr = pct(r.chanPitched, r.jobs);
       var ccr = pct(r.chanSold, r.chanPitched);
@@ -685,7 +685,7 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
       '</div>';
     html += '<p class="note" style="margin-bottom:8px;">' +
       (D.activeChan ? esc(chanLabel) + ' only — pitched/sold count ' + esc(chanLabel) + ' lines; other channels on the same job are ignored.'
-                    : (isPlumb ? 'Cross-sell consolidated across Water Purity / Water Heater / Sewer & Drain (a job counts once even if it spans groups). Groups come from the ServiceTitan pricebook cross-sale group.'
+                    : (isPlumb ? 'Plumbing consolidated across Water Purity / Water Heater / Sewer & Drain (a job counts once even if it spans groups). Groups come from the ServiceTitan pricebook cross-sale group.'
                                : 'Channels consolidated across IAQ / Insulation / Duct (a job counts once even if it spans channels). Classified via cross-sale group, standalone duct-sealing excluded.')) +
       ' Mix bars show each ' + (isPlumb ? 'group' : 'channel') + '\'s share of ' + (curMix === "rev" ? 'sold $ (item-level, so an estimate spanning two groups splits across both)' : 'sold jobs') + '.' +
       (chanTgt ? ' Missed = jobs × (target CGCR − actual CGCR) × $' + chanTicket.toLocaleString() + ' Avg Sale' + (isPlumb && !D.activeChan ? ' (blended by sold mix)' : '') + '.' : '') + '</p>';
@@ -742,9 +742,10 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     if (!secSel) return;
     var keep = secSel.value;
     secSel.innerHTML = "";
-    if (trade === "PLUMB") { addOpt(secSel, "chan", "Cross-Sell"); }
+    if (trade === "PLUMB") { addOpt(secSel, "chan", "ALL"); TRADE_CHANS.PLUMB.forEach(function (k) { addOpt(secSel, "chan:" + k, CHAN_NAMES[k]); }); }
     else { addOpt(secSel, "repl", "Replacement"); addOpt(secSel, "chan", "Channels"); }
-    secSel.value = keep; if (secSel.value !== keep) secSel.value = (secSel.options[0] || {}).value || "chan";
+    secSel.value = keep;
+    if (secSel.value !== keep) secSel.value = keep.indexOf("chan") === 0 ? "chan" : ((secSel.options[0] || {}).value || "chan");
   }
   if (tradeSel) tradeSel.value = curTrade;
   if (mixSel) mixSel.value = curMix;
@@ -756,8 +757,8 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
   var dateSel = document.getElementById("dateSel");
   var cFromSel = document.getElementById("cFromSel"), cToSel = document.getElementById("cToSel"), customWrap = document.getElementById("customWrap");
   if (dateSel) {
-    addOpt(dateSel, "MTD", "Month-to-Date"); addOpt(dateSel, "T7", "Trailing 7"); addOpt(dateSel, "T14", "Trailing 14"); addOpt(dateSel, "T30", "Trailing 30");
-    addOpt(dateSel, "QTD", "Quarter-to-Date"); addOpt(dateSel, "YTD", "Year-to-Date");
+    addOpt(dateSel, "MTD", "MTD"); addOpt(dateSel, "QTD", "QTD"); addOpt(dateSel, "YTD", "YTD");
+    addOpt(dateSel, "T7", "Trailing 7"); addOpt(dateSel, "T14", "Trailing 14"); addOpt(dateSel, "T30", "Trailing 30");
     if (monthList.length) { addOpt(dateSel, "", "── Months ──", true); monthList.forEach(function (m) { addOpt(dateSel, m.key, m.label); }); }
     if (quarterList.length) { addOpt(dateSel, "", "── Quarters ──", true); quarterList.forEach(function (q) { addOpt(dateSel, q.key, q.label); }); }
     addOpt(dateSel, "", "──", true); addOpt(dateSel, "CUSTOM", "Custom months…");
@@ -798,7 +799,7 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     var w = windowFor(curKey());
     var bIdx = brSel.value === "ALL" ? -1 : J.branches.indexOf(brSel.value);
     var jtSet = {}; membersOf(sel.value).forEach(function (jt) { var k = J.jobTypes.indexOf(jt); if (k >= 0) jtSet[k] = 1; });
-    var section = secSel ? secSel.value : "repl", chan = curChan();
+    var section = curSection(), chan = curChan();
     if (smSel) {
       var keep = smSel.value || "ALL", p = personStats(w.s, w.e, bIdx, -1, jtSet, section, chan, curTrade);
       fillRanked(smSel, smWrap, Object.keys(p.sms).map(Number), p.sms, J.sms, smMetric, keep);
@@ -821,20 +822,24 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
   }
   rebuildChan(curTrade);
   if (chanSel) chanSel.value = D.initialChan || "ALL";
+  // KPI value is "repl" | "chan" | "chan:WP" (plumbing picks its group straight from the KPI list)
+  function curSection() { return (secSel && secSel.value.indexOf("chan") === 0) ? "chan" : "repl"; }
   function syncChan() {
-    if (chanWrap) chanWrap.style.display = (secSel && secSel.value === "chan") ? "" : "none";
-    var lbl = chanWrap ? chanWrap.querySelector("label") : null;
-    if (lbl) lbl.textContent = curTrade === "PLUMB" ? "Group" : "Channel";
+    if (chanWrap) chanWrap.style.display = (curTrade === "HVAC" && curSection() === "chan") ? "" : "none";
   }
   syncChan();
-  function curChan() { return (secSel && secSel.value === "chan" && chanSel) ? chanSel.value : "ALL"; }
+  function curChan() {
+    if (!secSel) return "ALL";
+    if (curTrade === "PLUMB") return secSel.value.indexOf("chan:") === 0 ? secSel.value.slice(5) : "ALL";
+    return (secSel.value === "chan" && chanSel) ? chanSel.value : "ALL";
+  }
   if (smSel) smSel.value = D.initialSM || "ALL";
   if (techSel) techSel.value = D.initialTech || "ALL";
   wireTog("smTog", function () { return smMetric; }, function (v) { smMetric = v; });
   wireTog("techTog", function () { return techMetric; }, function (v) { techMetric = v; });
   rebuildPeople();
 
-  function draw() { document.getElementById("root").innerHTML = render(sel.value, brSel.value, secSel ? secSel.value : "repl"); }
+  function draw() { document.getElementById("root").innerHTML = render(sel.value, brSel.value, curSection()); }
   function reapply() {
     applyRange(curKey(), smSel ? smSel.value : "ALL", techSel ? techSel.value : "ALL", curChan(), curTrade);
     draw();
