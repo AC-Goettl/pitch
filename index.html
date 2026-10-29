@@ -136,13 +136,17 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     var pr = pct(s.pitched, s.jobs), cr = pct(s.closed, s.pitched);
     return which === "PR" ? pr : Math.ceil(pr * cr / 100);   // GCR, same formula as the table
   }
+  var MIN_JOBS = 5;   // fewer than this → ranked but not color-tiered
   var TIER = [ { bg: "#e3f4e8", fg: "#1a7a3c" }, { bg: "#fff4d6", fg: "#8a6d00" }, { bg: "#fdeaea", fg: "#CD1E1F" } ];
   // Fill a dropdown with people sorted by the metric (ALL first), coloring the
   // top / middle / bottom third green / yellow / red. Keeps the current pick.
   function fillRanked(selEl, wrapEl, names, stats, lookup, which, keep, unassigned) {
     selEl.innerHTML = ""; addOpt(selEl, "ALL", "ALL");
-    var list = names.map(function (i) { return { i: i, name: lookup[i], s: stats[i], m: metricOf(stats[i], which) }; });
-    list.sort(function (a, b) { return (b.m - a.m) || (b.s.jobs - a.s.jobs) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); });
+    var all = names.map(function (i) { return { i: i, name: lookup[i], s: stats[i], m: metricOf(stats[i], which) }; });
+    var byM = function (a, b) { return (b.m - a.m) || (b.s.jobs - a.s.jobs) || a.name.toLowerCase().localeCompare(b.name.toLowerCase()); };
+    // People under MIN_JOBS are ranked but not tiered: listed after the tiered group, in gray
+    var list = all.filter(function (p) { return p.s.jobs >= MIN_JOBS; }).sort(byM);
+    var few  = all.filter(function (p) { return p.s.jobs <  MIN_JOBS; }).sort(byM);
     var n = list.length, tierOf = {};
     list.forEach(function (p, k) {
       var tier = n < 3 ? 1 : Math.min(2, Math.floor(k * 3 / n));
@@ -150,12 +154,19 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
       var o = addOpt(selEl, p.name, p.name + "  —  " + p.m + "%  (" + p.s.jobs + " jobs)");
       o.style.background = TIER[tier].bg; o.style.color = TIER[tier].fg; o.style.fontWeight = "600";
     });
+    if (few.length) {
+      addOpt(selEl, "", "── under " + MIN_JOBS + " jobs ──", true);
+      few.forEach(function (p) {
+        var o = addOpt(selEl, p.name, p.name + "  —  " + p.m + "%  (" + p.s.jobs + (p.s.jobs === 1 ? " job)" : " jobs)"));
+        o.style.background = "#f1f1f1"; o.style.color = "#777"; o.style.fontWeight = "500";
+      });
+    }
     selEl.value = keep; if (selEl.value !== keep) selEl.value = "ALL";
     var t = tierOf[selEl.value];
     selEl.style.background = t == null ? "#fff" : TIER[t].bg;
     selEl.style.color = t == null ? "" : TIER[t].fg;
     selEl.style.fontWeight = t == null ? "" : "700";
-    if (wrapEl) wrapEl.style.display = n ? "" : "none";
+    if (wrapEl) wrapEl.style.display = (n + few.length) ? "" : "none";
   }
 
   // ── Date windows (all derived from D.currentDate = run date; all EXCLUDE it) ──
