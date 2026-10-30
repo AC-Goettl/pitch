@@ -489,8 +489,14 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     var bIdx = branch === "ALL" ? -1 : J.branches.indexOf(branch);
     var cb = CHAN_BITS[chan] || null, any = TRADE_ANY[trade || "HVAC"];
     var y = curY, m = curM, buckets = [];
+    var mtdDays = YEST - monthStart(curY, curM) + 1;   // days in the current MTD window
     for (var i = 0; i < TREND_MONTHS; i++) {
-      buckets.unshift({ y: y, m: m, s: monthStart(y, m), e: clampEnd(monthEnd(y, m)), label: MONTHS[m] + (m === 0 || i === TREND_MONTHS - 1 ? " '" + String(y).slice(2) : ""), jobs: 0, p: 0, c: 0, rev: 0 });
+      var b = { y: y, m: m, s: monthStart(y, m), e: clampEnd(monthEnd(y, m)), label: MONTHS[m] + (m === 0 || i === TREND_MONTHS - 1 ? " '" + String(y).slice(2) : ""), jobs: 0, p: 0, c: 0, rev: 0 };
+      // Year-ago slot: clip to the same day range as MTD so the two ends compare like-for-like
+      if (i === TREND_MONTHS - 1 && mtdDays > 0 && mtdDays < (monthEnd(y, m) - monthStart(y, m) + 1)) {
+        b.e = Math.min(b.e, b.s + mtdDays - 1); b.yoy = true; b.label += " (1–" + mtdDays + ")";
+      }
+      buckets.unshift(b);
       m--; if (m < 0) { m = 11; y--; }
     }
     var first = buckets[0].s, last = buckets[buckets.length - 1].e;
@@ -512,7 +518,7 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
       if (!(jtMembers.length > 1 && BONUS[J.jobTypes[r[3]]])) b.jobs++;
       if (p) b.p++; if (c) b.c++; b.rev += rev;
     }
-    buckets.forEach(function (b) { b.partial = b.s < DATA0 || b.e < monthEnd(b.y, b.m); b.pr = pct(b.p, b.jobs); b.gcr = Math.ceil(b.pr * pct(b.c, b.p) / 100); });
+    buckets.forEach(function (b) { b.partial = b.s < DATA0 || (!b.yoy && b.e < monthEnd(b.y, b.m)); b.pr = pct(b.p, b.jobs); b.gcr = Math.ceil(b.pr * pct(b.c, b.p) / 100); });
     return buckets;
   }
   function niceMax(v) {
@@ -536,7 +542,8 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
     }
     buckets.forEach(function (b, i) {
       var h = Math.max(0, T + ph - yR(b.rev));
-      parts.push('<rect x="' + (cx(i) - bw / 2).toFixed(1) + '" y="' + yR(b.rev).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + C.lightBlue + '" opacity="' + (b.partial ? '0.45' : '1') + '" rx="2"><title>' + esc(b.label) + ': ' + fmtMoney(b.rev) + ' sold · ' + b.jobs + ' jobs' + (b.partial ? ' (partial month)' : '') + '</title></rect>');
+      var isMtd = i === buckets.length - 1;
+      parts.push('<rect x="' + (cx(i) - bw / 2).toFixed(1) + '" y="' + yR(b.rev).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + (b.yoy || isMtd ? C.darkBlue : C.lightBlue) + '" opacity="' + (b.partial ? '0.45' : '1') + '" rx="2"><title>' + esc(b.label) + ': ' + fmtMoney(b.rev) + ' sold · ' + b.jobs + ' jobs' + (b.yoy ? ' (same days as MTD, year ago)' : isMtd ? ' (MTD)' : b.partial ? ' (partial — report begins ' + isoOf(DATA0) + ')' : '') + '</title></rect>');
       parts.push('<text x="' + cx(i).toFixed(1) + '" y="' + (T + ph + 16) + '" text-anchor="middle" font-size="10" font-weight="700" fill="' + (b.partial ? C.gray : C.medBlue) + '">' + esc(b.label) + '</text>');
     });
     function line(key, color, dash, name) {
@@ -554,7 +561,8 @@ const D = {"JOBS": {"branches": ["San Antonio", "Phoenix", "Austin", "Tucson", "
       '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:12px;height:10px;background:' + C.lightBlue + ';border-radius:2px;display:inline-block;"></span>$ Sold</span>' +
       '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:3px;background:' + C.red + ';border-radius:2px;display:inline-block;"></span>Pitch Rate</span>' +
       '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:14px;height:0;border-top:3px dashed ' + C.darkBlue + ';display:inline-block;"></span>Gross Close Rate</span>' +
-      (anyPartial ? '<span style="color:' + C.gray + ';font-weight:600;">lighter bars = partial month (report begins ' + esc(isoOf(DATA0)) + ' · current month through yesterday)</span>' : '') + '</div>';
+      '<span style="display:inline-flex;align-items:center;gap:5px;"><span style="width:12px;height:10px;background:' + C.darkBlue + ';border-radius:2px;display:inline-block;"></span>MTD vs same days last year</span>' +
+      (anyPartial ? '<span style="color:' + C.gray + ';font-weight:600;">lighter bar = report begins ' + esc(isoOf(DATA0)) + ', month incomplete</span>' : '') + '</div>';
     return '<div class="card" style="padding:14px 12px 12px;">' +
       '<div style="font-family:\'Roboto Slab\',Georgia,serif;font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:0.03em;color:' + C.darkBlue + ';text-align:center;margin-bottom:6px;">' + esc(title) + ' — trailing 13 months</div>' +
       '<div style="overflow-x:auto;"><svg viewBox="0 0 ' + W + ' ' + H + '" width="100%" style="min-width:680px;display:block;" xmlns="http://www.w3.org/2000/svg" role="img">' + parts.join("") + '</svg></div>' + legend + '</div>';
